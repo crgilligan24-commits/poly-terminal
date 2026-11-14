@@ -1,0 +1,16 @@
+# runtime history and anything personal: positions, alerts, scorecard
+data/
+
+# local working copies
+backups/
+index.backup-*.html
+UPGRADE_PROMPT.md
+
+# editor and assistant settings
+.claude/
+.vscode/
+
+node_modules/
+*.log
+.DS_Store
+Thumbs.db

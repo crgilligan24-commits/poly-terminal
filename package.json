@@ -1,0 +1,10 @@
+{
+  "name": "poly-terminal",
+  "version": "1.0.0",
+  "description": "A local, read-only terminal for Polymarket: top-trader tracking, a market heatmap, live order books and a scorecard. No dependencies.",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "private": true
+}
