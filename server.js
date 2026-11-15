@@ -8,7 +8,6 @@ const zlib = require('zlib');
 const DATA_API = process.env.POLY_DATA_API || 'https://data-api.polymarket.com';
 const GAMMA_API = process.env.POLY_GAMMA_API || 'https://gamma-api.polymarket.com';
 const CLOB_API = process.env.POLY_CLOB_API || 'https://clob.polymarket.com';
-const SITE = process.env.POLY_SITE || 'https://polymarket.com';
 const POLL_INTERVAL = parseInt(process.env.POLY_POLL_MS, 10) || 60_000;
 const PORT = parseInt(process.env.POLY_PORT, 10) || 8890;
 const DATA_DIR = process.env.POLY_DATA_DIR || path.join(__dirname, 'data');   // history that survives a restart
@@ -16,12 +15,9 @@ const POS_LIMIT = 250;                           // rows fetched per wallet, per
 const TRADE_WINDOW_SHOWN = 24;                   // plays the Trade Window lists by default (and the scorecard logs)
 const TRADE_WINDOW_SENT = 80;                    // plays sent, so the page can filter without a round trip
 
-/* ── Your account ──────────────────────────────────────────────────
-   Accepts a Polymarket username OR a 0x wallet address. A username is
-   resolved via the public profile page; a wallet is used directly.
-   Override without editing this file:  set POLY_ME=0x...  */
-const MY_ACCOUNT = process.env.POLY_ME || '';
-const RESOLVE_RETRY_MS = 5 * 60_000;   // re-attempt a failed lookup this often
+/* Hosts this server answers to. Anything else is refused, so a web page that
+   points its own domain at 127.0.0.1 (DNS rebinding) cannot read the API. */
+const ALLOWED_HOSTS = new Set([`127.0.0.1:${PORT}`, `localhost:${PORT}`, `[::1]:${PORT}`]);
 
 const store = {
     leaderboards: {}, topTrader: null, consensus: [], allTrades: [],
@@ -36,9 +32,6 @@ const store = {
     marketPrices: {}, marketMeta: {},
     tape: [],
     stats: {},
-    // personal tracking
-    me: { input: MY_ACCOUNT, wallet: null, resolved: false, error: null,
-          positions: [], portfolioValue: null, signals: [], alerts: [] },
     top: null, briefing: null,
     error: null,            // plain-language reason the last poll failed, if it did
     lastUpdated: null, pollFailed: false, initialized: false,
@@ -52,17 +45,13 @@ let heldNow = {};              // end dates, prices and categories for markets o
 let marketIndex = new Map();   // market key -> full allTrades row (holder detail, served on demand)
 let payloadCache = new Map();  // tab -> JSON string, rebuilt lazily after each poll
 
-/* personal-tracking state, retained across polls */
-let _me = { wallet: null, resolved: false, error: null, lastTry: 0, userName: null };
-let _myMktStats = {};     // conditionId -> { seen:Set, exited:Set, entered:Set, initialSide }
-let _myAlerts = [];
 
 let _prev = {};
 /* Last successful position snapshot per wallet:
    wallet -> { ts, truncated, pos: { key -> {size, price, value, avg, cid, outcome, title, slug, first} } }
    A wallet is only present if its fetch succeeded on the previous poll. */
 let _snap = {};
-let _seq = 0;             // event id counter for Order Flow rows and overlap alerts
+let _seq = 0;             // event id counter for Order Flow rows
 let pnlHistory = {};
 let priceHistory = {};
 let priceSeen = {};       // conditionId -> last time a price point was recorded
@@ -81,7 +70,7 @@ function jparse(s, fb) {
 const chunk = (arr, n) => { const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; };
 
 /* ── Persistence ───────────────────────────────────────────────────
-   Price history, PnL history, the Order Flow feed, overlap alerts and the
+   Price history, PnL history, the Order Flow feed, the scorecard and the
    position baseline are saved to ./data as JSON once per poll and loaded on
    start. Each file is written to a .tmp sibling and renamed over the real
    one, so a crash mid-write can never leave a half-written file behind. */
@@ -129,15 +118,6 @@ function loadState() {
         store.liveChanges = liveChanges;
         loaded.push(`${liveChanges.length} flow events`);
     }
-    const al = readJson('alerts.json');
-    if (al) {
-        _myAlerts = (Array.isArray(al.alerts) ? al.alerts : []).filter(a => now - (a.ts || 0) < FEED_MAX_AGE);
-        _seq = Math.max(_seq, num(al.seq));
-        for (const [cid, st] of Object.entries(al.mktStats || {}))
-            _myMktStats[cid] = { seen: new Set(st.seen || []), exited: new Set(st.exited || []),
-                                 entered: new Set(st.entered || []), initialSide: st.initialSide || null };
-        loaded.push(`${_myAlerts.length} alerts`);
-    }
     const sn = readJson('snapshot.json');
     if (sn?.wallets && now - (sn.savedAt || 0) < SNAP_MAX_AGE) {
         // titles and slugs are stored once per market in the file; put them back on each row
@@ -154,24 +134,14 @@ function loadState() {
         scorecard = { seq: num(sc.seq), plays: sc.plays };
         loaded.push(`${scorecard.plays.length} scorecard plays`);
     }
-    const mb = readJson('manual-book.json');
-    if (Array.isArray(mb?.rows)) {
-        manualBook = mb.rows; manualSeq = num(mb.seq);
-        if (manualBook.length) loaded.push(`${manualBook.length} manual positions`);
-    }
     console.log(`  data/  ${loaded.length ? 'loaded ' + loaded.join(', ') : 'nothing to load, starting fresh'}`);
 }
 async function saveState(nowMs) {
     try {
         await fs.promises.mkdir(DATA_DIR, { recursive: true });
-        const mktStats = {};
-        for (const [cid, st] of Object.entries(_myMktStats))
-            mktStats[cid] = { seen: [...st.seen], exited: [...st.exited], entered: [...st.entered],
-                              initialSide: st.initialSide || null };
         await writeAtomic('price-history.json', { savedAt: nowMs, series: priceHistory, seen: priceSeen });
         await writeAtomic('pnl-history.json', { savedAt: nowMs, series: pnlHistory });
         await writeAtomic('live-changes.json', { savedAt: nowMs, seq: _seq, changes: liveChanges });
-        await writeAtomic('alerts.json', { savedAt: nowMs, seq: _seq, alerts: _myAlerts, mktStats });
         // the baseline repeats each market title once per holder; store titles once instead
         const markets = {}, slim = {};
         for (const [w, s] of Object.entries(_snap)) {
@@ -425,7 +395,7 @@ async function fetchMarketsByCondition(ids) {
 }
 
 /* ── Position diffing ──────────────────────────────────────────────
-   One diff feeds both Order Flow and the overlap alerts, so the two cannot
+   One diff feeds both Order Flow and the briefing, so the two cannot
    disagree. Rules:
 
    • A wallet is diffed only if it has a snapshot from the previous poll.
@@ -463,7 +433,7 @@ function buildSnapshot(wallets, positions, fetchOk, truncated, nowMs) {
 
 const MAX_EXIT_CHECKS = 150;   // disappearances verified per poll, largest first
 
-async function diffPositions(prevSnap, curSnap, rawKeys, nowMs, myConds) {
+async function diffPositions(prevSnap, curSnap, rawKeys, nowMs) {
     const events = [], gone = [];
     for (const [w, cur] of Object.entries(curSnap)) {
         const prev = prevSnap[w];
@@ -484,7 +454,7 @@ async function diffPositions(prevSnap, curSnap, rawKeys, nowMs, myConds) {
             if (cur.pos[k]) continue;
             if (rawKeys[w]?.has(k)) continue;                        // still listed, just settled
             if (p.price >= 0.995 || p.price <= 0.005) continue;      // was already at a settlement price
-            if (!(p.size > 50 || myConds.has(p.cid))) continue;      // too small for either feed
+            if (!(p.size > 50)) continue;                            // too small for the feed
             gone.push({ wallet: w, key: k, windowed, ...p });
         }
     }
@@ -571,53 +541,39 @@ function leadBySide(snap, wallets) {
 }
 
 /* ── Resolve a username (or wallet) to a proxy wallet ──────────────
-   There is no public username->wallet API: gamma /profiles requires auth
-   and /public-search returns 0 results even for known-good names (verified
-   against swisstony and RN1). The public profile page is the one reliable
-   path — the owner's address dominates the markup (~59 occurrences vs 3-4
-   for unrelated contract addresses), so the most frequent 0x match is the
-   wallet. Confirmed exact for swisstony and RN1.
-   Returns { wallet } or { error } — never a fabricated address. */
+   A wallet is used directly. A username goes through Gamma's public search
+   (search_profiles), which returns each profile's proxy wallet; only an
+   exact, case-insensitive name match is accepted. Nothing is scraped.
+   Returns { wallet, userName } or { error } — never a fabricated address. */
+const USERNAME_RE = /^[A-Za-z0-9_.-]{1,64}$/;
 async function resolveAccount(input) {
     const raw = String(input || '').trim().replace(/^@/, '');
-    if (!raw) return { error: 'No account configured.' };
+    if (!raw) return { error: 'Type a Polymarket username or a 0x wallet address.' };
 
     if (/^0x[a-fA-F0-9]{40}$/.test(raw)) {
         const w = raw.toLowerCase();
-        try {
-            const p = await getPositions(w, 1);
-            if (!Array.isArray(p)) return { error: `Wallet ${raw.slice(0, 10)}… returned no position data.` };
-            return { wallet: w };
-        } catch { return { error: `Could not reach the positions API for ${raw.slice(0, 10)}….` }; }
+        // a known leaderboard wallet already has a display name
+        const meta = traderMeta.get(w) || traderMeta.get(raw);
+        return { wallet: w, userName: meta?.userName || null };
     }
+    if (!USERNAME_RE.test(raw))
+        return { error: 'That is not a username or a wallet address. A wallet is 0x followed by 40 hex characters.' };
 
-    let res;
+    // a tracked leaderboard name needs no lookup
+    for (const [w, m] of traderMeta)
+        if (m.userName && m.userName.toLowerCase() === raw.toLowerCase())
+            return { wallet: String(w).toLowerCase(), userName: m.userName };
+
+    let body;
     try {
-        res = await fetch(`${SITE}/@${encodeURIComponent(raw)}`, {
-            signal: AbortSignal.timeout(25_000),
-            headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-        });
-    } catch {
-        return { error: `Could not reach polymarket.com to look up @${raw}.` };
+        body = await apiGet(`${GAMMA_API}/public-search`, { q: raw, search_profiles: true, limit_per_type: 20 });
+    } catch (e) {
+        return { error: `Could not reach Polymarket's profile search (${e.message || e}).` };
     }
-    if (res.status === 404)
-        return { error: `No public Polymarket profile exists at polymarket.com/@${raw}. ` +
-                        `The account may be private, renamed, or not yet public.` };
-    if (!res.ok) return { error: `polymarket.com/@${raw} returned HTTP ${res.status}.` };
-
-    const html = await res.text();
-    const hits = html.match(/0x[a-fA-F0-9]{40}/g) || [];
-    if (!hits.length) return { error: `No wallet address found on the profile page for @${raw}.` };
-    const freq = {};
-    for (const h of hits) { const k = h.toLowerCase(); freq[k] = (freq[k] || 0) + 1; }
-    const [best, count] = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
-    if (count < 5) return { error: `Could not confidently identify the wallet for @${raw}.` };
-
-    try {
-        const p = await getPositions(best, 1);
-        if (!Array.isArray(p)) return { error: `Resolved @${raw} but the positions API returned no data.` };
-    } catch { return { error: `Resolved @${raw} but could not fetch its positions.` }; }
-    return { wallet: best, userName: raw };
+    const hit = (Array.isArray(body?.profiles) ? body.profiles : [])
+        .find(p => String(p.name || '').toLowerCase() === raw.toLowerCase() && /^0x[a-fA-F0-9]{40}$/.test(p.proxyWallet || ''));
+    if (!hit) return { error: `No public Polymarket profile is named "${raw}". Check the spelling, or paste the 0x wallet address from the profile page instead.` };
+    return { wallet: hit.proxyWallet.toLowerCase(), userName: hit.name };
 }
 
 /* ── Live market universe from Gamma ───────────────────────────── */
@@ -818,9 +774,18 @@ function scorecardSummary() {
     let cum = 0;
     let curve = done.map(p => { cum += ret(p) / 100; return [p.resolvedAt || p.ts, r2(cum), p.status === 'won' ? 1 : 0]; });
     if (curve.length > 500) curve = curve.slice(-500);
+    /* A few cheap winners can carry the average: a 5c win returns +1,900%.
+       The median, and the average without the three largest wins, show
+       whether the typical play made money. */
+    const rets = done.map(ret).sort((a, b) => a - b), n = rets.length;
+    const typical = n ? {
+        median: r2(n % 2 ? rets[(n - 1) / 2] : (rets[n / 2 - 1] + rets[n / 2]) / 2),
+        withoutTop3: n > 3 ? r2(rets.slice(0, n - 3).reduce((s, x) => s + x, 0) / (n - 3)) : null,
+        top3: rets.slice(-3).reverse().map(r2),
+    } : null;
     return {
         minSample: SC_MIN_SAMPLE, logged: all.length, since: all.length ? all[0].ts : null,
-        calibration, curve,
+        calibration, curve, typical,
         overall: agg(all),
         buckets: SC_BUCKETS.map(([lo, hi]) => ({ lo, hi, ...agg(all.filter(p => p.score >= lo && p.score <= hi)) })),
         byCat: CATS.map(c => ({ cat: c, ...agg(all.filter(p => p.cat === c)) })).filter(x => x.n || x.open),
@@ -829,75 +794,6 @@ function scorecardSummary() {
     };
 }
 
-/* ── Manual book ───────────────────────────────────────────────────
-   Positions typed in by hand (for an account with no public profile). They
-   are stored in data/manual-book.json, valued with the same live prices as
-   everything else, and run through the same overlap signals. This is a
-   record only: nothing here can place, change or cancel an order. */
-let manualBook = [];      // { id, cid, title, slug, outcome, entry, shares, addedAt, lastPrice }
-let manualSeq = 0;
-let _ctx = null;          // what the last good poll knew, for rebuilding My Book between polls
-
-async function saveManual() {
-    try {
-        await fs.promises.mkdir(DATA_DIR, { recursive: true });
-        await writeAtomic('manual-book.json', { savedAt: Date.now(), seq: manualSeq, rows: manualBook });
-    } catch (e) { console.error('  data/  manual book save failed —', e.message || e); }
-}
-function manualPositions(held, pIdx) {
-    return manualBook.map(b => {
-        const hm = held[b.cid];
-        const i = hm?.outcomes ? hm.outcomes.indexOf(b.outcome) : -1;
-        let cur = i >= 0 && hm.prices?.[i] != null ? hm.prices[i] : null;
-        if (cur == null) cur = pIdx.get(b.cid)?.[b.outcome] ?? null;
-        const known = cur != null;
-        if (known) b.lastPrice = cur; else cur = b.lastPrice ?? b.entry;
-        return {
-            manual: true, id: b.id, asset: 'manual:' + b.id, conditionId: b.cid, title: b.title,
-            eventSlug: b.slug, outcome: b.outcome, size: b.shares, avgPrice: b.entry, curPrice: cur,
-            currentValue: b.shares * cur, initialValue: b.shares * b.entry,
-            cashPnl: b.shares * (cur - b.entry),
-            percentPnl: b.entry > 0 ? (cur - b.entry) / b.entry * 100 : 0,
-            endDate: hm?.endDate || null, addedAt: b.addedAt, priceKnown: known,
-            settled: !!hm?.closed || cur >= 0.9999 || cur <= 0.0001,
-        };
-    });
-}
-function addManual(b) {
-    const cid = String(b?.cid || ''), outcome = String(b?.outcome || '');
-    const entry = Number(b?.entry), shares = Number(b?.shares);
-    const lm = liveNow[cid], t = marketIndex.get(cid), hm = heldNow[cid];
-    if (!cid || (!lm && !t && !hm)) return { error: 'Pick a market from the search results first.' };
-    const outcomes = lm?.outcomes?.length ? lm.outcomes : (tokenIndex.get(cid)?.outcomes || hm?.outcomes || []);
-    if (!outcomes.includes(outcome)) return { error: 'That side is not an outcome of this market.' };
-    if (!(entry > 0 && entry < 1)) return { error: 'Entry price must be between 0.1c and 99.9c.' };
-    if (!(shares > 0) || shares > 1e9) return { error: 'Shares must be a number above zero.' };
-    const row = {
-        id: ++manualSeq, cid, title: lm?.question || t?.market || hm?.question || '?',
-        slug: lm?.eventSlug || lm?.slug || t?.slug || hm?.slug || '', outcome,
-        entry: r4(entry), shares: r2(shares), addedAt: Date.now(),
-    };
-    manualBook.push(row);
-    saveManual(); rebuildMe();
-    return { ok: true, id: row.id };
-}
-function removeManual(id) {
-    const n = manualBook.length;
-    manualBook = manualBook.filter(b => String(b.id) !== String(id));
-    if (manualBook.length === n) return { error: 'No such entry.' };
-    saveManual(); rebuildMe();
-    return { ok: true };
-}
-/* Rebuild My Book from what the last poll already fetched, so an added or
-   removed entry shows up at once instead of after the next poll. */
-function rebuildMe() {
-    if (!_ctx) return;
-    try {
-        store.me = buildMe(_ctx.myBook, manualPositions(_ctx.heldMarkets, priceIndex), [], _ctx.positions,
-                           _ctx.wmeta, store.allTrades, _ctx.heldMarkets, Date.now());
-    } catch (e) { console.error('  me     rebuild failed —', e.message || e); }
-    commit();
-}
 function searchMarkets(text) {
     const words = String(text || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
     if (!words.length || words.join('').length < 2) return [];
@@ -1036,167 +932,181 @@ async function getChart(cid, oi, range) {
     return body;
 }
 
-/* ── Personal positions, overlap alerts and rule-based signals ─────
-   Reuses the same positions endpoint, the same isPositionOpen() filter,
-   and the same 60s poll as everything else. */
-/* Step 1 of 2: resolve the account and load its book. Runs BEFORE the
-   position diff so the diff knows which markets are "mine". */
-async function fetchMyBook(nowMs) {
-    // 1. resolve the account (cached; retried periodically while failing)
-    if (!_me.resolved && (nowMs - _me.lastTry) > RESOLVE_RETRY_MS) {
-        _me.lastTry = nowMs;
-        const r = await resolveAccount(MY_ACCOUNT);
-        if (r.wallet) { _me.wallet = r.wallet; _me.resolved = true; _me.error = null;
-                        _me.userName = r.userName || null; }
-        else { _me.error = r.error; }
-    }
-    const base = { input: MY_ACCOUNT, wallet: _me.wallet, resolved: _me.resolved,
-                   error: _me.error, userName: _me.userName,
-                   positions: [], portfolioValue: null, signals: [], alerts: _myAlerts.slice(0, 60) };
-    if (!_me.resolved) return { base, mine: [], value: null, activity: [], ok: false };
+/* ── Account lookup ────────────────────────────────────────────────
+   Any public Polymarket account, typed into the Account tab: its open
+   positions (the book) and its closed or resolved positions (the record).
+   Read-only and on demand. Nothing about a looked-up account is written to
+   disk, and each account is fetched from Polymarket at most once a minute. */
+const ACCT_TTL = 60_000;
+const ACCT_OPEN_MAX = 500;        // open positions read, largest first
+const ACCT_CLOSED_MAX = 600;      // most recent closed positions scored
+const acctCache = new Map();      // wallet -> { ts, body } or { ts, promise }
 
-    // 2. my open positions — same endpoint, same open-filter as every other wallet
-    let mine = [], value = null, activity = [];
+/* One status of an account's positions, following the v2 cursor. */
+async function positionsByStatus(user, status, max, sortBy) {
+    const out = [];
+    let cursor = null, more = false;
+    do {
+        const params = { user, status, limit: Math.min(200, max - out.length), sort_by: sortBy, sort_direction: 'DESC' };
+        if (cursor) params.cursor = cursor;
+        const body = await apiGet(`${DATA_API}/v2/positions`, params);
+        if (!body || !Array.isArray(body.data)) throw new Error('v2 /positions: response missing data envelope');
+        out.push(...body.data);
+        more = !!body.pagination?.has_more;
+        cursor = body.pagination?.next_cursor || null;
+    } while (more && cursor && out.length < max);
+    return { rows: out, truncated: more };
+}
+
+/* Live price for one outcome from the last poll, when the market is tracked. */
+function livePrice(cid, outcome, oi) {
+    const lm = liveNow[cid];
+    if (lm?.prices) {
+        const i = lm.outcomes ? lm.outcomes.indexOf(outcome) : -1;
+        const k = i >= 0 ? i : oi;
+        if (lm.prices[k] != null) return lm.prices[k];
+    }
+    const p = priceIndex.get(cid)?.[outcome];
+    return p != null ? p : null;
+}
+
+/* What tracked top traders hold in the same market, counted by side. */
+function topOverlap(cid, outcome) {
+    const t = (store.allTrades || []).find(x => x.conditionId === cid);
+    if (!t || !t.sides?.length) return null;
+    const total = t.sides.reduce((s, x) => s + x.count, 0);
+    const same = t.sides.find(s => s.name === outcome);
+    const own = (same?.traders || []).filter(tr => !tr.hedged);
+    return {
+        same: same?.count || 0, other: total - (same?.count || 0), total,
+        consensus: t.sides[0]?.name || null, hedged: t.hedgedCount || 0,
+        avgEntry: own.length ? r4(own.reduce((s, tr) => s + tr.avgPrice, 0) / own.length) : null,
+    };
+}
+
+function bookRow(p, nowMs) {
+    const cid = p.condition_id || '', outcome = p.outcome || '?', size = num(p.current_size);
+    const avg = num(p.avg_price), live = livePrice(cid, outcome, p.outcome_index);
+    const cur = live != null ? live : num(p.current_price);
+    const cost = size * avg, value = size * cur, pnl = value - cost;
+    const endMs = liveNow[cid]?.endMs || heldNow[cid]?.endMs
+        || (p.end_date && p.end_date !== '1970-01-01' ? Date.parse(p.end_date) : 0) || 0;
+    return {
+        asset: String(p.token_id || cid + '|' + outcome), conditionId: cid, title: p.title || '?', outcome,
+        slug: p.event_slug || p.slug || '', size: r2(size), avgPrice: r4(avg), curPrice: r4(cur), live: live != null,
+        cost: r2(cost), value: r2(value), pnl: r2(pnl), pct: cost > 0 ? r2(pnl / cost * 100) : 0,
+        openedAt: p.first_entry_at ? num(p.first_entry_at) * 1000 : null,
+        hoursLeft: endMs ? (endMs - nowMs) / 3600_000 : null,
+        cat: liveNow[cid]?.cat || heldNow[cid]?.cat || categorize([], p.title || ''),
+        top: topOverlap(cid, outcome),
+    };
+}
+
+/* A closed or resolved position, scored once. Cost is shares bought times
+   the average price paid; P&L is Polymarket's own realized + unrealized. */
+function recordRow(p) {
+    const avg = num(p.avg_price), bought = num(p.total_size), cost = bought * avg;
+    const pnl = p.total_pnl != null ? num(p.total_pnl) : num(p.realized_pnl) + num(p.unrealized_pnl);
+    return {
+        cid: p.condition_id || '', title: p.title || '?', outcome: p.outcome || '?',
+        slug: p.event_slug || p.slug || '', entry: r4(avg), cost: r2(cost), pnl: r2(pnl),
+        ret: cost > 0 ? r4(pnl / cost) : 0, won: pnl > 0,
+        ts: num(p.last_event_at) * 1000 || null,
+        how: p.status === 'REDEEMABLE' ? 'resolved, not yet redeemed' : 'closed',
+        cat: categorize([], p.title || ''),
+    };
+}
+
+function summarize(rows) {
+    const n = rows.length;
+    if (!n) return { n: 0 };
+    const wins = rows.filter(r => r.won).length;
+    const cost = rows.reduce((s, r) => s + r.cost, 0), pnl = rows.reduce((s, r) => s + r.pnl, 0);
+    const rets = rows.map(r => r.ret).sort((a, b) => a - b);
+    const median = n % 2 ? rets[(n - 1) / 2] : (rets[n / 2 - 1] + rets[n / 2]) / 2;
+    const avgEntry = rows.reduce((s, r) => s + r.entry, 0) / n;
+    return {
+        n, wins, hit: r2(wins / n * 100), cost: r2(cost), pnl: r2(pnl),
+        roi: cost > 0 ? r2(pnl / cost * 100) : null,
+        avgRet: r2(rets.reduce((s, x) => s + x, 0) / n * 100), medRet: r2(median * 100),
+        breakEven: r2(avgEntry * 100), edge: r2(wins / n * 100 - avgEntry * 100),
+        small: n < SC_MIN_SAMPLE,
+    };
+}
+
+function buildRecord(rows) {
+    rows.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    const all = summarize(rows);
+    // how much of the profit the few biggest winners carry
+    const byPnl = [...rows].sort((a, b) => b.pnl - a.pnl);
+    const top3 = byPnl.slice(0, 3).filter(r => r.pnl > 0);
+    const rest = summarize(rows.filter(r => !top3.includes(r)));
+    const cal = SC_CAL.map(([lo, hi]) => {
+        const d = rows.filter(r => r.entry * 100 >= lo && r.entry * 100 < hi);
+        const s = summarize(d);
+        return { lo, hi: Math.min(hi, 100), n: d.length, hit: d.length ? s.hit : null,
+                 avgEntry: d.length ? r2(d.reduce((a, r) => a + r.entry, 0) / d.length * 100) : null,
+                 pnl: d.length ? s.pnl : 0, roi: d.length ? s.roi : null };
+    });
+    const cats = {};
+    for (const r of rows) (cats[r.cat] ||= []).push(r);
+    const byCat = Object.entries(cats).map(([cat, d]) => ({ cat, ...summarize(d) })).sort((a, b) => b.n - a.n);
+    return {
+        ...all, top3Pnl: r2(top3.reduce((s, r) => s + r.pnl, 0)), top3N: top3.length, withoutTop3: rest,
+        cal, byCat, best: byPnl.slice(0, 5).filter(r => r.pnl > 0),
+        worst: byPnl.slice(-5).reverse().filter(r => r.pnl < 0),
+        recent: rows.slice(0, 60),
+        from: rows.length ? rows[rows.length - 1].ts : null, to: rows.length ? rows[0].ts : null,
+    };
+}
+
+async function fetchAccount(wallet, userName) {
+    const nowMs = Date.now();
+    const [open, redeem, closed, val] = await Promise.all([
+        positionsByStatus(wallet, 'OPEN', ACCT_OPEN_MAX, 'CURRENT_VALUE'),
+        positionsByStatus(wallet, 'REDEEMABLE', 200, 'TIMESTAMP'),
+        positionsByStatus(wallet, 'CLOSED', ACCT_CLOSED_MAX, 'TIMESTAMP'),
+        dataGet('/value', { user: wallet }).catch(() => null),
+    ]);
+    const openRows = open.rows
+        .filter(p => num(p.current_size) > 0.01 && isPositionOpen(v2Position(p)))
+        .map(p => bookRow(p, nowMs));
+    const resolved = [...redeem.rows, ...closed.rows].filter(p => num(p.total_size) > 0).map(recordRow);
+    const unredeemed = redeem.rows.filter(p => num(p.current_value) > 0);
+    const value = Array.isArray(val) ? num(val[0]?.value) : (val && val.value != null ? num(val.value) : null);
+    const name = userName || open.rows[0]?.name || closed.rows[0]?.name || redeem.rows[0]?.name || null;
+    return {
+        ok: true, wallet, userName: name, fetchedAt: nowMs,
+        book: {
+            positions: openRows, truncated: open.truncated,
+            value: r2(openRows.reduce((s, p) => s + p.value, 0)), cost: r2(openRows.reduce((s, p) => s + p.cost, 0)),
+            pnl: r2(openRows.reduce((s, p) => s + p.pnl, 0)), totalValue: value,
+            unredeemed: { n: unredeemed.length, value: r2(unredeemed.reduce((s, p) => s + num(p.current_value), 0)) },
+        },
+        record: { ...buildRecord(resolved), truncated: closed.truncated || redeem.truncated, max: resolved.length },
+    };
+}
+
+async function lookupAccount(input) {
+    const shown = String(input || '').trim().slice(0, 80);
+    const r = await resolveAccount(input);
+    if (r.error) return { ok: false, input: shown, error: r.error };
+    const hit = acctCache.get(r.wallet);
     try {
-        const [pos, val, act] = await Promise.all([
-            getPositions(_me.wallet, 250),
-            dataGet('/value', { user: _me.wallet }).catch(() => null),
-            dataGet('/activity', { user: _me.wallet, limit: 500 }).then(r => mapRows(r, v2Activity)).catch(() => []),
-        ]);
-        mine = (Array.isArray(pos) ? pos : []).filter(isPositionOpen);
-        if (Array.isArray(val) && val[0]) value = num(val[0].value);
-        else if (val && typeof val === 'object' && val.value != null) value = num(val.value);
-        activity = Array.isArray(act) ? act : [];
+        if (hit && Date.now() - hit.ts < ACCT_TTL) return { ...(hit.body || await hit.promise), input: shown };
+        const promise = fetchAccount(r.wallet, r.userName);
+        acctCache.set(r.wallet, { ts: Date.now(), promise });
+        const body = await promise;
+        acctCache.set(r.wallet, { ts: Date.now(), body });
+        if (acctCache.size > 50) acctCache.delete(acctCache.keys().next().value);
+        return { ...body, input: shown };
     } catch (e) {
-        return { base: { ...base, error: 'Could not load positions for this account: ' + (e.message || e) },
-                 mine: [], value: null, activity: [], ok: false };
+        acctCache.delete(r.wallet);
+        return { ok: false, input: shown, wallet: r.wallet,
+                 error: 'Could not load this account from Polymarket (' + (e.message || e) + ').' };
     }
-    return { base, mine, value, activity, ok: true };
 }
 
-/* Step 2 of 2: overlap alerts and rule-based signals for my positions.
-   Alerts come from the shared position diff (see diffPositions), so they
-   follow exactly the same rules as Order Flow: no alert for a wallet with
-   no baseline, exits confirmed, settled markets ignored. */
-function buildMe(book, manualRows, events, topPositions, wmeta, allTrades, heldMarkets, nowMs) {
-    const acctErr = book.ok ? null : (book.base?.error || _me.error || null);
-    const mine = [...(book.ok ? book.mine : []), ...manualRows];
-    if (!mine.length)
-        return { ...book.base, error: acctErr, positions: [], signals: [], portfolioValue: null,
-                 alerts: _myAlerts.slice(0, 60), manualCount: 0 };
-    const value = book.ok ? book.value : null, activity = book.ok ? book.activity : [];
-
-    // earliest BUY per outcome token => how long the position has been open
-    const firstBuy = {};
-    for (const a of activity) {
-        if (!a.asset || String(a.side).toUpperCase() !== 'BUY') continue;
-        const ts = num(a.timestamp) * 1000;
-        if (!ts) continue;
-        if (!firstBuy[a.asset] || ts < firstBuy[a.asset]) firstBuy[a.asset] = ts;
-    }
-
-    // 3. which top wallets are in MY markets right now
-    const myConds = new Set(mine.map(p => p.conditionId).filter(Boolean));
-    for (const cid of myConds)
-        _myMktStats[cid] ||= { seen: new Set(), exited: new Set(), entered: new Set(), initialSide: null };
-    for (const [w, plist] of Object.entries(topPositions))
-        for (const p of plist)
-            if (p.conditionId && myConds.has(p.conditionId)) _myMktStats[p.conditionId].seen.add(w);
-
-    // 4. exit / trim / entry alerts from the shared diff
-    const fresh = [];
-    for (const e of events) {
-        if (!myConds.has(e.cid)) continue;
-        const st = _myMktStats[e.cid];
-        const row = { market: e.title, slug: e.slug, conditionId: e.cid,
-                      trader: wmeta[e.wallet]?.userName || (e.wallet.slice(0, 6) + '…' + e.wallet.slice(-4)),
-                      wallet: e.wallet, side: e.outcome, hadSize: r2(e.prevSize), nowSize: r2(e.size),
-                      delta: r2(e.size - e.prevSize), value: r2(e.value), ts: nowMs };
-        if (e.kind === 'EXIT') {
-            st.exited.add(e.wallet); st.entered.delete(e.wallet);
-            fresh.push({ id: ++_seq, type: 'EXIT', ...row });
-        } else if (e.kind === 'TRIM' && e.size < e.prevSize * 0.85 && (e.prevSize - e.size) > 50) {
-            fresh.push({ id: ++_seq, type: 'TRIM', ...row });
-        } else if (e.kind === 'NEW' && e.size >= 1) {
-            st.entered.add(e.wallet); st.exited.delete(e.wallet);
-            fresh.push({ id: ++_seq, type: 'ENTRY', ...row });
-        }
-    }
-    if (fresh.length) _myAlerts = [...fresh, ..._myAlerts].slice(0, 80);
-
-    // 5. build each position + its transparent signal
-    const positions = [], signals = [];
-    for (const p of mine) {
-        const cid = p.conditionId || '';
-        const lm = cid ? heldMarkets[cid] : null;
-        const trade = cid ? allTrades.find(t => t.conditionId === cid) : null;
-        const avg = num(p.avgPrice), cur = num(p.curPrice);
-        const openedAt = p.manual ? p.addedAt : (p.asset ? (firstBuy[p.asset] || null) : null);
-
-        const row = {
-            // `asset` is the outcome token — unique per side. conditionId alone
-            // collides when the same wallet holds BOTH sides of a market.
-            asset: p.asset || (cid + '|' + (p.outcome || '')),
-            title: p.title || '?', outcome: p.outcome || '?', conditionId: cid,
-            slug: p.eventSlug || p.slug || '',
-            size: num(p.size), avgPrice: r4(avg), curPrice: r4(cur),
-            currentValue: r2(num(p.currentValue)), initialValue: r2(num(p.initialValue)),
-            cashPnl: r2(num(p.cashPnl)), percentPnl: r2(num(p.percentPnl)),
-            openedAt, heldMs: openedAt ? nowMs - openedAt : null,
-            endDate: lm?.endDate || p.endDate || null,
-            hoursLeft: lm?.endMs ? (lm.endMs - nowMs) / 3600_000 : null,
-            manual: !!p.manual, id: p.manual ? p.id : null,
-            settled: p.manual ? p.settled : false, priceKnown: p.manual ? p.priceKnown : true,
-        };
-        positions.push(row);
-
-        // ── signal: counts only, every number surfaced ──
-        const st = _myMktStats[cid] || { seen: new Set(), exited: new Set(), entered: new Set() };
-        const sides = trade?.sides || [];
-        const total = sides.reduce((s, x) => s + x.count, 0);
-        const sameSide = sides.find(s => s.name === row.outcome);
-        const sameN = sameSide?.count || 0;
-        const oppN = total - sameN;
-        const topSide = sides[0]?.name || null;
-        if (st.initialSide == null && topSide) st.initialSide = topSide;
-        const shifted = !!(st.initialSide && topSide && st.initialSide !== topSide);
-        const exited = st.exited.size, entered = st.entered.size;
-        // average entry of top wallets on my side
-        let avgTop = null;
-        if (sameSide?.traders?.length)
-            avgTop = r4(sameSide.traders.reduce((s, t) => s + t.avgPrice, 0) / sameSide.traders.length);
-
-        let flag = 'MIXED';
-        if (entered > exited && sameN >= oppN) flag = 'BUILDING';
-        else if (exited > entered || (shifted && oppN > sameN)) flag = 'EXITING';
-
-        const facts = [];
-        facts.push(`${sameN} top wallet${sameN === 1 ? '' : 's'} on your side (${row.outcome})` +
-                   (oppN ? `, ${oppN} on the other side` : ''));
-        facts.push(exited ? `${exited} exited since tracking began` : 'none have exited since tracking began');
-        if (entered) facts.push(`${entered} newly entered since tracking began`);
-        if (shifted) facts.push(`consensus moved from ${st.initialSide} to ${topSide}`);
-        else if (topSide) facts.push(`consensus side is ${topSide}`);
-        facts.push(`your entry ${(avg * 100).toFixed(1)}c vs now ${(cur * 100).toFixed(1)}c`);
-        if (avgTop != null) facts.push(`top wallets on your side entered at ~${(avgTop * 100).toFixed(1)}c`);
-
-        signals.push({
-            asset: row.asset, conditionId: cid, title: row.title, outcome: row.outcome, flag,
-            topSameSide: sameN, topOppSide: oppN, topTotal: total,
-            exitedCount: exited, enteredCount: entered,
-            consensusSide: topSide, initialSide: st.initialSide, consensusShifted: shifted,
-            myEntry: r4(avg), curPrice: r4(cur), avgTopEntry: avgTop,
-            facts,
-        });
-    }
-
-    const manualValue = manualRows.reduce((s, p) => s + p.currentValue, 0);
-    return { input: MY_ACCOUNT, wallet: _me.wallet, resolved: _me.resolved, error: acctErr,
-             userName: _me.userName, positions,
-             portfolioValue: value == null ? r2(positions.reduce((s, p) => s + p.currentValue, 0))
-                                           : r2(value + manualValue),
-             signals, alerts: _myAlerts.slice(0, 60), manualCount: manualRows.length };
-}
 
 async function poll() {
     if (polling) return;
@@ -1275,7 +1185,7 @@ async function poll() {
         //     countdowns, not for filtering — most sit outside the volume sweep).
         const heldIds = [...new Set(
             Object.values(positions).flat().map(p => p.conditionId)
-                .concat(manualBook.map(b => b.cid)).filter(Boolean)
+                .filter(Boolean)
         )].filter(c => !liveMarkets[c]);
         const heldMarkets = await fetchMarketsByCondition(heldIds);
         for (const [cid, lm] of Object.entries(liveMarkets)) {
@@ -1287,7 +1197,7 @@ async function poll() {
             };
         }
 
-        // 3d. Outcome token ids and last known prices per market (charts, manual book, search)
+        // 3d. Outcome token ids and last known prices per market (charts, account lookups, search)
         const tIdx = new Map(), pIdx = new Map();
         for (const plist of Object.values(rawPositions)) {
             for (const p of plist) {
@@ -1530,19 +1440,8 @@ async function poll() {
         }
 
         // 9. Position change detection (rules documented at diffPositions)
-        let myBook;
-        try { myBook = await fetchMyBook(nowMs); }
-        catch (e) {
-            myBook = { ok: false, mine: [], value: null, activity: [],
-                       base: { input: MY_ACCOUNT, wallet: _me.wallet, resolved: _me.resolved,
-                               error: 'Personal tracking failed: ' + (e.message || e), userName: _me.userName,
-                               positions: [], portfolioValue: null, signals: [], alerts: _myAlerts.slice(0, 60) } };
-        }
-        const manualRows = manualPositions(heldMarkets, pIdx);
-        const myConds = new Set([...myBook.mine, ...manualRows].map(p => p.conditionId).filter(Boolean));
-
         const curSnap = buildSnapshot(wallets, positions, fetchOk, truncated, nowMs);
-        const diff = await diffPositions(_snap, curSnap, rawKeys, nowMs, myConds);
+        const diff = await diffPositions(_snap, curSnap, rawKeys, nowMs);
         const diffedWallets = Object.keys(curSnap)
             .filter(w => _snap[w] && nowMs - _snap[w].ts <= SNAP_MAX_AGE);
 
@@ -1905,16 +1804,6 @@ async function poll() {
         // 18. Tape — newest first for the ticker
         const tape = [...liveChanges].sort((a, b) => b.ts - a.ts).slice(0, 60);
 
-        // 18b. Personal tracking (never allowed to fail the whole poll)
-        let me;
-        try {
-            me = buildMe(myBook, manualRows, diff.events, positions, wmeta, allTrades, heldMarkets, nowMs);
-        } catch (e) {
-            me = { input: MY_ACCOUNT, wallet: _me.wallet, resolved: _me.resolved,
-                   error: 'Personal tracking failed: ' + (e.message || e),
-                   positions: [], portfolioValue: null, signals: [], alerts: [], manualCount: 0 };
-        }
-
         // 18c. Scorecard: log what reached the default Trade Window, settle what has resolved
         const shownPlays = hourlyPlays.slice(0, TRADE_WINDOW_SHOWN);
         logPlays(shownPlays, nowMs);
@@ -1959,26 +1848,22 @@ async function poll() {
             sparklines, liveChanges, convictionPlays,
             dayVsWeek: { day: dayList, week: weekList, overlap },
             quickMoney, hourlyPlays: hourlyPlays.slice(0, TRADE_WINDOW_SENT), momentumMovers, resolvingSoon,
-            marketPrices: {}, tape, stats, me, top, briefing, error: null,
+            marketPrices: {}, tape, stats, top, briefing, error: null,
             lastUpdated: new Date().toISOString(), pollFailed: false, initialized: true,
         });
         marketIndex = new Map(allTrades.map(t => [t.key, t]));
         traderMeta = tMeta; tokenIndex = tIdx; priceIndex = pIdx;
         liveNow = liveMarkets; heldNow = heldMarkets;
-        _ctx = { myBook, positions, wmeta, heldMarkets };
         commit();
 
         const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
-        const meNote = me.resolved
-            ? `me:${me.positions.length}pos/${me.alerts.length}alerts`
-            : `me:unresolved`;
         console.log(`[${ts}] ok — ${wallets.length} traders · ${openCount} open pos ` +
             `(${filteredOut} settled filtered of ${rawCount}) · ${allTrades.length} mkts · ` +
             `${hourlyPlays.length} hourly · ${momentumMovers.length} movers · ` +
             `${newChanges.length} changes [${diffedWallets.length}/${wallets.length} wallets diffed` +
             `${fetchFailed ? `, ${fetchFailed} fetch failed` : ''}` +
             `${diff.checked ? `, ${diff.checked} exits checked` : ''}` +
-            `${diff.skipped ? `, ${diff.skipped} unconfirmed` : ''}] · ${meNote}` +
+            `${diff.skipped ? `, ${diff.skipped} unconfirmed` : ''}]` +
             ` · scorecard ${scorecard.plays.length}${scSettled ? ` (${scSettled} settled)` : ''}`);
 
         await saveState(nowMs);      // once per poll, after the new data is already being served
@@ -1997,9 +1882,10 @@ async function poll() {
 }
 
 /* ── Serving ───────────────────────────────────────────────────────
-   /api/data?tab=<now|traders|consensus|markets|mine>   small summary for one tab
+   /api/data?tab=<now|traders|consensus|markets|map|score>   small summary for one tab
    /api/market?id=<market key>                          one market with full holder detail
    /api/trader?wallet=<0x…>                             one trader's book
+   /api/account?u=<username or 0x…>                     any public account's book and record
    /api/depth?id=<conditionId>&o=<0|1>                  the public order book for one outcome
    /api/tape?min=<dollars>                              recent large public trades
    /api/find?q=<text>                                   markets and traders, for the command palette
@@ -2008,21 +1894,9 @@ async function poll() {
    &v=<rev> returns a tiny "unchanged" reply when nothing new has been polled. */
 function commit() { store.rev++; payloadCache = new Map(); }
 
-function pinOf(me) {
-    if (!me?.positions?.length) return null;
-    return {
-        manual: me.manualCount || 0,
-        value: me.portfolioValue != null ? me.portfolioValue
-             : r2(me.positions.reduce((s, p) => s + p.currentValue, 0)),
-        open: me.positions.length,
-        pnl: r2(me.positions.reduce((s, p) => s + p.cashPnl, 0)),
-        exiting: (me.signals || []).filter(s => s.flag === 'EXITING').length,
-        alerts: (me.alerts || []).filter(a => a.type === 'EXIT' || a.type === 'TRIM').length,
-    };
-}
 const basePayload = () => ({
     rev: store.rev, stats: store.stats, lastUpdated: store.lastUpdated,
-    pollFailed: store.pollFailed, initialized: store.initialized, pin: pinOf(store.me),
+    pollFailed: store.pollFailed, initialized: store.initialized,
     error: store.pollFailed ? store.error : null,
 });
 const TAB_FIELDS = {
@@ -2033,9 +1907,11 @@ const TAB_FIELDS = {
                       dayVsWeek: store.dayVsWeek }),
     consensus: () => ({ quickMoney: store.quickMoney, consensus: store.consensus,
                         convictionPlays: store.convictionPlays }),
-    mine: () => ({ me: store.me }),
     score: () => ({ scorecard: scorecardSummary() }),
     map: () => ({ heat: heatRows() }),
+    // the Account tab fetches its own data; this only offers a few names to try
+    acct: () => ({ suggest: (store.leaderboards.ALL_PNL || [])
+        .map(e => e.userName).filter(n => n && USERNAME_RE.test(n) && !/^0x/i.test(n)).slice(0, 4) }),
 };
 function tabJson(tab) {
     if (!payloadCache.has(tab))
@@ -2166,18 +2042,10 @@ function sameOrigin(req) {
     if (!o) return true;
     try { return new URL(o).host === req.headers.host; } catch { return false; }
 }
-function readBody(req) {
-    return new Promise((resolve, reject) => {
-        let s = '';
-        req.on('data', d => { s += d; if (s.length > 20_000) { reject(new Error('too large')); req.destroy(); } });
-        req.on('end', () => { try { resolve(JSON.parse(s || '{}')); } catch (e) { reject(e); } });
-        req.on('error', reject);
-    });
-}
 
 function sendJson(req, res, body, status = 200) {
     const text = typeof body === 'string' ? body : JSON.stringify(body);
-    const head = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+    const head = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
     if (text.length < 1400 || !/\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
         res.writeHead(status, head); res.end(text); return;
     }
@@ -2189,6 +2057,11 @@ function sendJson(req, res, body, status = 200) {
 }
 
 const server = http.createServer((req, res) => {
+    // Only answer requests addressed to this machine by name. A page on another
+    // site that rebinds its own domain to 127.0.0.1 still sends its own Host.
+    if (!ALLOWED_HOSTS.has(String(req.headers.host || '').toLowerCase())) {
+        res.writeHead(421, { 'Content-Type': 'text/plain' }); res.end('Misdirected request'); return;
+    }
     const url = new URL(req.url, 'http://127.0.0.1');
     const route = url.pathname, q = url.searchParams;
 
@@ -2255,24 +2128,19 @@ const server = http.createServer((req, res) => {
     }
     if (route === '/api/watch') { sendJson(req, res, watchPayload(q)); return; }
     if (route === '/api/search') { sendJson(req, res, { results: searchMarkets(q.get('q')) }); return; }
-    // Manual book: a local record of positions. It never talks to Polymarket.
-    if (route === '/api/book' && (req.method === 'POST' || req.method === 'DELETE')) {
-        if (!sameOrigin(req)) { sendJson(req, res, { error: 'forbidden' }, 403); return; }
-        if (req.method === 'DELETE') {
-            const r = removeManual(q.get('id'));
-            sendJson(req, res, r, r.error ? 404 : 200); return;
-        }
-        if (!/^application\/json/.test(req.headers['content-type'] || '')) {
-            sendJson(req, res, { error: 'expected JSON' }, 415); return;
-        }
-        readBody(req).then(b => { const r = addManual(b); sendJson(req, res, r, r.error ? 400 : 200); })
-                     .catch(() => sendJson(req, res, { error: 'Could not read that entry.' }, 400));
+    // Any public account, looked up by name or wallet. Read-only and not saved.
+    // A name that does not resolve is an answer ({ ok: false, error }), not a failed request.
+    if (route === '/api/account') {
+        lookupAccount(q.get('u') || '')
+            .then(body => sendJson(req, res, body))
+            .catch(e => sendJson(req, res, { ok: false, error: String(e.message || e) }, 500));
         return;
     }
     if (route === '/' || route === '/index.html') {
         try {
             const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8');
-            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
+                                 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer' });
             res.end(html);
         } catch { res.writeHead(500); res.end('Failed to read index.html'); }
         return;

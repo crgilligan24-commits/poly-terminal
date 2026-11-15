@@ -102,19 +102,19 @@ th.s.on.asc::after{border-bottom:4px solid var(--amber)}
 .clk{cursor:pointer}
 .clk:hover{color:var(--amber)}
 
-/* ═══ MY BOOK — deliberately distinct: this is the user's own money ═══ */
-.mine{border:1px solid rgba(255,176,32,.28);border-left:3px solid var(--amber);
+/* ═══ ACCOUNT — the looked-up account's summary card ═══ */
+.acc{border:1px solid rgba(255,176,32,.28);border-left:3px solid var(--amber);
   background:linear-gradient(180deg,rgba(255,176,32,.045),rgba(255,176,32,.012));
   padding:16px 20px;margin:20px 0 26px}
-.mine-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
-.mine-h h2{font-size:12px;font-weight:600;letter-spacing:1.6px;color:var(--amber);text-transform:uppercase}
-.mine-h .who{font-family:var(--mono);font-size:11px;color:var(--muted)}
-.mine-dis{font-size:10.5px;color:var(--muted);line-height:1.6;margin:6px 0 14px;
+.acc-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.acc-h h2{font-size:12px;font-weight:600;letter-spacing:1.6px;color:var(--amber);text-transform:uppercase}
+.acc-h .who{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.acc-dis{font-size:10.5px;color:var(--muted);line-height:1.6;margin:6px 0 14px;
   padding-left:10px;border-left:1px solid var(--rule);max-width:900px}
-.mine-sum{display:flex;flex-wrap:wrap;row-gap:12px;margin-bottom:16px;padding-bottom:14px;
+.acc-sum{display:flex;flex-wrap:wrap;row-gap:12px;margin-bottom:16px;padding-bottom:14px;
   border-bottom:1px solid var(--rule)}
-.mine-sum .dc{min-width:120px}
-.mine-sum .dc .v{font-size:17px}
+.acc-sum .dc{min-width:120px}
+.acc-sum .dc .v{font-size:17px}
 .na{padding:20px 22px;border:1px dashed var(--rule);background:rgba(255,255,255,.012)}
 .na .t{font-size:12px;font-weight:600;color:var(--amber);letter-spacing:.6px;margin-bottom:7px}
 .na .m{font-size:11.5px;color:var(--primary);line-height:1.7;margin-bottom:11px;max-width:760px}
@@ -141,13 +141,6 @@ th.s.on.asc::after{border-bottom:4px solid var(--amber)}
 .a-trim{background:rgba(255,176,32,.16);color:var(--amber)}
 .a-entry{background:rgba(46,212,122,.16);color:var(--up)}
 .alr .sz{color:var(--muted);white-space:nowrap;flex-shrink:0}
-/* pinned strip, visible on every tab once the account resolves */
-.pin{display:flex;align-items:center;gap:16px;padding:6px 22px;background:rgba(255,176,32,.06);
-  border-bottom:1px solid rgba(255,176,32,.22);font-size:10.5px;flex-wrap:wrap}
-.pin b{font-family:var(--mono);color:var(--primary);font-weight:600;margin-left:5px}
-.pin .lbl{color:var(--amber);letter-spacing:1.4px;text-transform:uppercase;font-size:9.5px;font-weight:600}
-.pin .go{margin-left:auto;color:var(--muted);cursor:pointer;letter-spacing:.6px}
-.pin .go:hover{color:var(--amber)}
 
 .wrap{padding:0 22px}
 .view{display:none}.view.on{display:block}
@@ -411,7 +404,7 @@ body{background:transparent}
 @keyframes ping{0%{transform:scale(.4);opacity:.7}70%,100%{transform:scale(1.6);opacity:0}}
 
 /* corner-bracket frame (the arwes move, done in pure CSS) */
-.hero,.mine,.qm,.dw{--bk:10px;--bc:var(--amber-dim);
+.hero,.acc,.qm,.dw{--bk:10px;--bc:var(--amber-dim);
   background-image:
     linear-gradient(var(--bc),var(--bc)),linear-gradient(var(--bc),var(--bc)),
     linear-gradient(var(--bc),var(--bc)),linear-gradient(var(--bc),var(--bc));
@@ -421,7 +414,7 @@ body{background:transparent}
 .hero{background-color:var(--raised)}
 .qm{background-color:var(--raised)}
 .dw{--bk:7px;--bc:rgba(255,176,32,.35);background-color:rgba(255,255,255,.014)}
-.mine{background-color:transparent;
+.acc{background-color:transparent;
   background-image:
     linear-gradient(var(--bc),var(--bc)),linear-gradient(var(--bc),var(--bc)),
     linear-gradient(var(--bc),var(--bc)),linear-gradient(var(--bc),var(--bc)),
@@ -661,31 +654,22 @@ tr.pr:hover>td{background:rgba(255,255,255,.03)}
 kbd{font-family:var(--mono);font-size:10px;border:1px solid var(--rule);padding:0 5px;color:var(--primary);
   background:var(--ground)}
 
-/* manual book form */
+/* account lookup form */
 .mform{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;position:relative;margin-bottom:4px}
 .mform .f{display:flex;flex-direction:column;gap:4px}
 .mform .f>span{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
 .mform input,.mform select{background:var(--ground);border:1px solid var(--rule);color:var(--primary);
   font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none;height:29px}
 .mform input:focus,.mform select:focus{border-color:var(--amber)}
-.mform #m-q{width:340px;max-width:80vw;font-family:var(--sans)}
-.sres{position:absolute;top:100%;left:0;z-index:20;background:var(--raised);border:1px solid var(--rule);
-  width:min(600px,90vw);max-height:270px;overflow-y:auto;margin-top:3px;box-shadow:0 12px 34px rgba(0,0,0,.55)}
-.sres div{padding:7px 11px;font-size:11.5px;cursor:pointer;display:flex;justify-content:space-between;gap:14px;
-  border-bottom:1px solid var(--rule)}
-.sres div:last-child{border-bottom:none}
-.sres div:hover{background:rgba(255,176,32,.08)}
-.sres .v{font-family:var(--mono);color:var(--muted);white-space:nowrap}
-.sres .e{color:var(--muted);cursor:default}
+.mform #acct-q{width:340px;max-width:80vw;font-family:var(--sans)}
+button.chip{background:none;cursor:pointer}
+button.chip:hover{color:var(--primary);border-color:var(--amber)}
+.acc-h a{margin-left:auto}
+.acc-h .meta{font-size:10.5px;color:var(--muted)}
 .btn{background:none;border:1px solid var(--amber-dim);color:var(--amber);font-family:var(--sans);font-size:10.5px;
   letter-spacing:.8px;text-transform:uppercase;padding:0 14px;cursor:pointer;height:29px}
 .btn:hover:not(:disabled){background:rgba(255,176,32,.1)}
 .btn:disabled{opacity:.35;cursor:default}
-.ferr{color:var(--down);font-size:11px;margin-top:6px;min-height:16px}
-.msel{font-size:11.5px;color:var(--muted);margin-top:6px;min-height:17px}
-.msel b{color:var(--primary);font-weight:500}
-.del{cursor:pointer;color:var(--muted);font-family:var(--mono);padding:0 4px}
-.del:hover{color:var(--down)}
 
 /* scorecard */
 .scn{border:1px dashed var(--rule);border-left:2px solid var(--amber);padding:12px 16px;font-size:11.5px;
@@ -874,13 +858,13 @@ body.dense .hero{margin:14px 0 22px;padding:14px 22px 12px}
   <div class="bar">
     <div class="brand"><span id="brand-t">POLY TERMINAL</span><span class="cur"></span></div>
     <nav class="nav">
-      <button data-v="mine">My Book</button>
       <button data-v="now">Now</button>
       <button data-v="traders">Traders</button>
       <button data-v="consensus">Consensus</button>
       <button data-v="markets">Markets</button>
       <button data-v="map">Heatmap</button>
       <button data-v="score">Scorecard</button>
+      <button data-v="acct">Account</button>
     </nav>
     <div class="hstats">
       <span id="hstats" style="display:contents"></span>
@@ -891,31 +875,24 @@ body.dense .hero{margin:14px 0 22px;padding:14px 22px 12px}
       <button class="rf" id="rf"><i></i><span id="rf-t">Refresh</span></button>
     </div>
   </div>
-  <div id="pin"></div>
   <div id="watch"></div>
 </div>
 
 <div class="wrap">
 
-  <!-- MY BOOK -->
-  <div id="v-mine" class="view">
-    <div id="mybook"></div>
-    <div class="sec" id="sec-manual">
-      <div class="sec-h"><h2>Add a position by hand</h2>
-        <span class="sub">for an account this page cannot read</span></div>
-      <div class="sec-note">Search for the market, pick your side, and type your average entry price and share count. Entries are saved on this computer in data/manual-book.json, valued with live prices, and checked against top-trader moves like any other position. This is a record only. It cannot place, change, or cancel an order, and it is not financial advice.</div>
+  <!-- ACCOUNT -->
+  <div id="v-acct" class="view">
+    <div class="sec" id="acct-form" style="margin-top:20px">
+      <div class="sec-h"><h2>Account</h2>
+        <span class="sub">any public Polymarket account: its open book and its track record</span></div>
+      <div class="sec-note">Type a Polymarket username or a 0x wallet address. The page reads that account's public positions from Polymarket and builds two things: the book (what it holds now, valued at live prices, next to what tracked top traders hold in the same markets) and the track record (how its closed positions turned out). Read only. Nothing about the account is saved.</div>
       <div class="mform">
-        <label class="f"><span>Market</span><input id="m-q" placeholder="search by name, e.g. bitcoin 150" autocomplete="off"></label>
-        <label class="f"><span>Side</span><select id="m-side" disabled><option>pick a market</option></select></label>
-        <label class="f"><span>Entry price (c)</span><input id="m-entry" type="number" min="0.1" max="99.9" step="0.1" style="width:104px"></label>
-        <label class="f"><span>Shares</span><input id="m-shares" type="number" min="0" step="1" style="width:104px"></label>
-        <button class="btn" id="m-add" disabled>Add to my book</button>
-        <div class="sres" id="m-res" style="display:none"></div>
+        <label class="f"><span>Username or wallet</span><input id="acct-q" placeholder="e.g. BreakTheBank or 0x…" autocomplete="off" spellcheck="false" maxlength="80"></label>
+        <button class="btn" id="acct-go">Look up</button>
+        <span id="acct-try" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"></span>
       </div>
-      <div class="msel" id="m-sel"></div>
-      <div class="ferr" id="m-err"></div>
     </div>
-    <div class="sec" id="sec-alerts"></div>
+    <div id="acct"></div>
   </div>
 
   <!-- NOW -->
@@ -1070,7 +1047,7 @@ body.dense .hero{margin:14px 0 22px;padding:14px 22px 12px}
 /* ═══ SAVED PREFERENCES ═══
    Tab, sorts, filters, stake, watchlist and alert settings live in this
    browser's localStorage. Nothing here is sent anywhere. */
-const VIEWS=['mine','now','traders','consensus','markets','map','score'];
+const VIEWS=['now','traders','consensus','markets','map','score','acct'];
 const CATS=['Sports','Crypto','Politics','Economy','Tech','Culture','World','Other'];
 function lsGet(k,d){ try{ const v=localStorage.getItem('pt.'+k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }
 function lsSet(k,v){ try{ localStorage.setItem('pt.'+k,JSON.stringify(v)); }catch(e){} }
@@ -1096,7 +1073,6 @@ const tabLoaded={};        // tab -> true once its data has arrived at least onc
 const openT=new Set(), openH=new Set(), openM=new Set(), showAll=new Set();
 const openMkt=new Set();   // inline market detail in the list sections, keyed by market key
 const openEv=new Set();    // inline detail under one Order Flow / alert row, keyed by event id
-const openMine=new Set();  // my-position signal drawers, keyed by outcome token
 const DASH='—', ARROW=' → ', EXT=' ↗';
 
 /* Write HTML only when it changed. Feed lists keep their scroll position (new
@@ -1215,10 +1191,13 @@ const SORTS={
   bk:{market:function(p){return low(p.title)},side:function(p){return low(p.outcome)},size:function(p){return p.size},
     entry:function(p){return p.avgPrice},now:function(p){return p.curPrice},closes:function(p){return p.hoursLeft},
     value:function(p){return p.currentValue},pnl:function(p){return p.cashPnl},pct:function(p){return p.percentPnl}},
-  me:{market:function(p){return low(p.title)},side:function(p){return low(p.outcome)},size:function(p){return p.size},
-    entry:function(p){return p.avgPrice},now:function(p){return p.curPrice},value:function(p){return p.currentValue},
-    pnl:function(p){return p.cashPnl},pct:function(p){return p.percentPnl},held:function(p){return p.heldMs},
-    closes:function(p){return p.hoursLeft}},
+  ac:{market:function(p){return low(p.title)},side:function(p){return low(p.outcome)},size:function(p){return p.size},
+    entry:function(p){return p.avgPrice},now:function(p){return p.curPrice},value:function(p){return p.value},
+    pnl:function(p){return p.pnl},pct:function(p){return p.pct},closes:function(p){return p.hoursLeft},
+    top:function(p){return p.top?p.top.same-p.top.other:null}},
+  ar:{res:function(p){return p.won?1:0},market:function(p){return low(p.title)},side:function(p){return low(p.outcome)},
+    entry:function(p){return p.entry},pnl:function(p){return p.pnl},ret:function(p){return p.ret},
+    cost:function(p){return p.cost},when:function(p){return p.ts}},
   sb:{lo:function(b){return b.lo},n:function(b){return b.n},wins:function(b){return b.wins},hit:function(b){return b.hit},
     be:function(b){return b.breakEven},edge:function(b){return b.hit==null?null:b.hit-b.breakEven},
     ret:function(b){return b.avgRet},open:function(b){return b.open},cat:function(b){return low(b.cat)}},
@@ -1454,13 +1433,19 @@ function mktBody(key){
   let h=chartHtml(cid,lead);
   if(!t)return h+'<div class="sec-note" style="margin:0">This market is outside the live universe and no tracked top trader holds it, so there is no book or holder detail to show.</div>';
   const c=cd(t.hoursLeft), oi=cid&&chartSt[cid]?chartSt[cid].oi:lead;
+  /* Every number in this block is quoted for the outcome the chart and book
+     show. The poll's quote is for the first outcome, so the second outcome
+     reads it mirrored (its bid is 1 - ask). Once the live book has loaded,
+     its best bid and ask replace the poll's, so the quote and book agree. */
+  const q=lv?sideQuote(lv,cid,oi):null, oname=lv&&lv.outcomes&&lv.outcomes[oi]?' '+E(cut(lv.outcomes[oi],14)):'';
   h+=lv?'<div class="dg">'+
-      '<div class="dc"><div class="k">Bid / Ask</div><div class="v">'+px(lv.bid)+' / '+px(lv.ask)+'</div></div>'+
-      '<div class="dc"><div class="k"><span data-def="sprd">Spread</span></div><div class="v '+(lv.spread>0.03?'down':'')+'">'+px(lv.spread)+'</div></div>'+
+      '<div class="dc"><div class="k">Bid / Ask,'+oname+'</div><div class="v">'+px(q.bid)+' / '+px(q.ask)+
+        '<small>'+(q.live?'live book':'as of last poll')+'</small></div></div>'+
+      '<div class="dc"><div class="k"><span data-def="sprd">Spread</span></div><div class="v '+(q.spread>0.03?'down':'')+'">'+px(q.spread)+'</div></div>'+
       '<div class="dc"><div class="k">24h volume</div><div class="v">'+$(lv.vol24)+'</div></div>'+
       '<div class="dc"><div class="k">Liquidity</div><div class="v">'+$(lv.liquidity)+'</div></div>'+
-      '<div class="dc"><div class="k">1h / 24h</div><div class="v"><span class="'+cl(lv.oneHour)+'">'+sc(lv.oneHour)+'</span>'+
-        '<small class="'+cl(lv.oneDay)+'">'+(lv.oneDay!=null?sc(lv.oneDay)+' over 24h':'')+'</small></div></div>'+
+      '<div class="dc"><div class="k">1h / 24h,'+oname+'</div><div class="v"><span class="'+cl(q.oneHour)+'">'+sc(q.oneHour)+'</span>'+
+        '<small class="'+cl(q.oneDay)+'">'+(q.oneDay!=null?sc(q.oneDay)+' over 24h':'')+'</small></div></div>'+
       '<div class="dc"><div class="k">Closes</div><div class="v '+(c.c==='c0'?'am':'')+'">'+c.t+'</div></div>'+
     '</div>'
     :'<div class="sec-note">No live order book. This market is closed, resolved, or outside the tracked liquid universe.</div>';
@@ -1477,220 +1462,162 @@ function mktBody(key){
   return h;
 }
 function mktDetail(key){ return '<div class="mdet">'+mktBody(key)+'</div>'; }
-
-/* ══ MY BOOK ══ */
-function heldFor(ms){
-  if(ms==null)return DASH;
-  const h=ms/3600000;
-  if(h<1)return Math.round(h*60)+'m';
-  if(h<48)return h.toFixed(1)+'h';
-  return Math.round(h/24)+'d';
-}
-function flagCls(f){ return f==='BUILDING'?'f-build':f==='EXITING'?'f-exit':'f-mixed'; }
-function flagTxt(f){ return f==='BUILDING'?'wallets building':f==='EXITING'?'wallets exiting':'mixed / no clear signal'; }
-
-function rPin(){
-  // the server sends a small summary with every tab; the full book loads on the My Book tab
-  const m=D.pin, el=document.getElementById('pin');
-  if(!m){ setH(el,''); return; }
-  setH(el,'<div class="pin"><span class="lbl">My Book</span>'+
-    '<span>Value<b>'+$(m.value)+'</b></span>'+
-    '<span>Open<b>'+m.open+'</b></span>'+
-    '<span>Unrealized<b class="'+cl(m.pnl)+'">'+$(m.pnl)+'</b></span>'+
-    (m.manual?'<span>Entered by hand<b>'+m.manual+'</b></span>':'')+
-    (m.exiting?'<span>Flagged<b class="down">'+m.exiting+' exiting</b></span>':'')+
-    (m.alerts?'<span>Alerts<b class="am">'+m.alerts+'</b></span>':'')+
-    '<span class="go" data-goto="mine">open my book &rsaquo;</span></div>');
+/* The quote for one outcome: the live book when it is loaded, otherwise the
+   last poll's first-outcome quote, mirrored for the second outcome. */
+function sideQuote(lv,cid,oi){
+  const neg=function(x){ return x==null?null:-x; }, inv=function(x){ return x==null?null:1-x; };
+  let bid=oi===1?inv(lv.ask):lv.bid, ask=oi===1?inv(lv.bid):lv.ask, live=false;
+  const dc=cid&&depths[cid+'|'+(oi===1?1:0)], d=dc&&dc.loaded&&dc.data;
+  if(d&&!d.error&&d.bids&&d.asks&&d.bids.length&&d.asks.length){ bid=d.bids[0][0]; ask=d.asks[0][0]; live=true; }
+  return { bid:bid, ask:ask, live:live,
+           spread:bid!=null&&ask!=null?Math.max(0,ask-bid):lv.spread,
+           oneHour:oi===1?neg(lv.oneHour):lv.oneHour, oneDay:oi===1?neg(lv.oneDay):lv.oneDay };
 }
 
-function rMine(){
-  const m=D.me||{}, el=document.getElementById('mybook');
-  const pos=m.positions||[], sig={};
-  const acct=m.resolved
-    ? 'Linked account: <b>'+E(m.userName||m.input)+'</b> ('+E(short(m.wallet))+').'
-    : m.input?'The account <b>'+E(m.input)+'</b> could not be read: '+E(m.error||'no public profile was found.')+
-      ' Positions you add by hand below are tracked instead.'
-    : 'No Polymarket account is linked. Positions you add by hand below are tracked instead.';
-  let h='<div class="mine"><div class="mine-h"><h2>My Positions</h2>'+
-    '<span class="who">'+(m.manualCount?m.manualCount+' entered by hand':'')+(m.resolved&&m.manualCount?' &middot; ':'')+
-    (m.resolved?E(m.userName||m.input):'')+'</span></div>'+
-    '<div class="mine-dis">'+acct+' Signals describe what other public wallets are doing in the same markets. '+
-    'They are not financial advice, not a recommendation, and not a prediction. Wallet activity is often '+
-    'stale, partial, or driven by positions you cannot see. You are making the final call.</div>';
-
-  if(!pos.length){
-    h+='<div class="na"><div class="t">No positions to show yet</div>'+
-       '<div class="m">'+(m.resolved?'This account resolved but holds no open positions.':'Nothing has been entered by hand and no account is linked.')+
-       ' Use the form below to add a position. It is valued with live prices and checked against top-trader moves on every poll.</div>'+
-       '<div class="h">To link a public account instead, restart the server with your wallet address: '+
-       '<code>set POLY_ME=0xYourWalletAddress</code> then <code>node server.js</code>. '+
-       'Your wallet is in the URL when you open your own profile on polymarket.com.</div></div></div>';
-    setH(el,h); return;
+/* ══ ACCOUNT ══ any public account: what it holds now, and how its closed positions turned out */
+let ACC=null, accSeq=0, accBusy=false, accAll=false, accRecAll=false;
+const ACC_TTL=65000;
+function accLookup(u,quiet){
+  u=String(u||'').trim().replace(/^@/,'').slice(0,80);
+  if(!u)return;
+  if(P.acct!==u){ P.acct=u; save(); accAll=false; accRecAll=false; }
+  const box=document.getElementById('acct-q'); if(box&&document.activeElement!==box)box.value=u;
+  accBusy=true; syncHash(); if(!quiet&&view==='acct')rAcct();
+  const my=++accSeq;
+  fetch('/api/account?u='+encodeURIComponent(u),{cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if(my===accSeq)ACC=j; })
+    .catch(function(){ if(my===accSeq)ACC={ok:false,input:u,error:'Could not reach the local server. Is node server.js still running?'}; })
+    .then(function(){ if(my!==accSeq)return; accBusy=false; if(view==='acct'){ rAcct(); hud(); } });
+}
+/* refetch the open account once its data is over a minute old */
+function accStale(){
+  if(view!=='acct'||!P.acct||accBusy)return;
+  if(!ACC||ACC.input!==P.acct||(ACC.ok&&Date.now()-ACC.fetchedAt>ACC_TTL))accLookup(P.acct,true);
+}
+function topCell(t){
+  if(!t)return '<span class="mu" title="No tracked top trader holds this market">'+DASH+'</span>';
+  const c=t.same>t.other?'up':t.other>t.same?'down':'';
+  return '<span class="'+c+'" title="'+t.same+' tracked top wallet'+(t.same===1?'':'s')+' hold this side, '+t.other+' the other side'+
+    (t.hedged?' ('+t.hedged+' on both sides, not counted)':'')+(t.avgEntry!=null?'\ntop wallets on this side paid ~'+px(t.avgEntry):'')+'">'+
+    t.same+' same &middot; '+t.other+' other</span>';
+}
+function accTry(){
+  const s=(D&&D.suggest)||[];
+  return s.length?'<span class="mu" style="font-size:11px">Try a leaderboard trader:</span> '+s.map(function(n){
+    return '<button class="chip" data-acct="'+E(n)+'">'+E(cut(n,18))+'</button>'; }).join(' '):'';
+}
+function rAcct(){
+  setH('acct-try',accTry());
+  const el=document.getElementById('acct');
+  if(!P.acct){
+    setH(el,'<div class="na"><div class="t">No account looked up yet</div>'+
+      '<div class="m">Type any public Polymarket username or 0x wallet address above. The page reads that account\'s public positions and builds its book and its track record. Nothing about the account is saved.</div>'+
+      '<div class="h">A wallet address is in the URL of any profile on polymarket.com.</div></div>');
+    return;
   }
-  // keyed by asset (outcome token) — conditionId collides when both sides are held
-  (m.signals||[]).forEach(function(s){ sig[s.asset]=s; });
-  const totVal=pos.reduce(function(s,p){return s+p.currentValue},0);
-  const totCost=pos.reduce(function(s,p){return s+p.initialValue},0);
-  const totPnl=pos.reduce(function(s,p){return s+p.cashPnl},0);
-  const winners=pos.filter(function(p){return p.cashPnl>0}).length;
-  const exiting=(m.signals||[]).filter(function(s){return s.flag==='EXITING'}).length;
-  const building=(m.signals||[]).filter(function(s){return s.flag==='BUILDING'}).length;
+  if(!ACC||ACC.input!==P.acct){ setH(el,'<div class="empty">Looking up <b>'+E(P.acct)+'</b> on Polymarket&hellip;</div>'); return; }
+  if(!ACC.ok){ setH(el,'<div class="na"><div class="t">Could not load that account</div><div class="m">'+E(ACC.error||'Unknown error.')+'</div></div>'); return; }
+  const a=ACC, b=a.book, r=a.record, pos=b.positions||[];
+  const name=a.userName||short(a.wallet);
+  let h='<div class="acc"><div class="acc-h"><h2>'+E(name)+'</h2>'+
+    '<span class="who">'+E(short(a.wallet))+'</span>'+
+    '<a class="am" style="font-size:11px" target="_blank" rel="noopener" href="https://polymarket.com/profile/'+E(a.wallet)+'">profile on polymarket.com'+EXT+'</a>'+
+    '<span class="meta">'+(accBusy?'refreshing&hellip;':'read '+ago(a.fetchedAt))+'</span></div>'+
+    '<div class="acc-dis">Public data from Polymarket, read only. This shows what one account holds and how its past positions turned out. It is not advice and not a prediction.</div>'+
+    '<div class="acc-sum">'+
+      '<div class="dc"><div class="k">Open positions</div><div class="v">'+pos.length+(b.truncated?'<small>largest '+pos.length+' shown</small>':'')+'</div></div>'+
+      '<div class="dc"><div class="k">Value</div><div class="v">'+$(b.value)+'<small>cost '+$(b.cost)+'</small></div></div>'+
+      '<div class="dc"><div class="k">Unrealized P&amp;L</div><div class="v '+cl(b.pnl)+'">'+$(b.pnl)+'<small>'+(b.cost>0?pc(b.pnl/b.cost*100,1):DASH)+'</small></div></div>'+
+      '<div class="dc"><div class="k">Won, not yet redeemed</div><div class="v">'+$(b.unredeemed.value)+'<small>'+b.unredeemed.n+' position'+(b.unredeemed.n===1?'':'s')+'</small></div></div>'+
+      '<div class="dc"><div class="k">Closed positions scored</div><div class="v">'+(r.n||0)+(r.truncated?'<small>most recent '+r.max+'</small>':'')+'</div></div>'+
+      '<div class="dc"><div class="k"><span data-def="hit">Hit rate</span></div><div class="v">'+(r.n?r.hit.toFixed(0)+'%':DASH)+'<small>'+(r.n?'break-even '+r.breakEven.toFixed(0)+'%':'nothing closed')+'</small></div></div>'+
+      '<div class="dc"><div class="k">Realized P&amp;L</div><div class="v '+cl(r.pnl)+'">'+(r.n?$(r.pnl):DASH)+'<small>'+(r.roi!=null?pc(r.roi,1)+' on cost':'')+'</small></div></div>'+
+    '</div></div>';
 
-  h+='<div class="mine-sum">'+
-    '<div class="dc"><div class="k">Portfolio value</div><div class="v">'+$(m.portfolioValue!=null?m.portfolioValue:totVal)+'</div></div>'+
-    '<div class="dc"><div class="k">Open positions</div><div class="v">'+pos.length+(m.manualCount?'<small>'+m.manualCount+' entered by hand</small>':'')+'</div></div>'+
-    '<div class="dc"><div class="k">Cost basis</div><div class="v">'+$(totCost)+'</div></div>'+
-    '<div class="dc"><div class="k">Unrealized P&amp;L</div><div class="v '+cl(totPnl)+'">'+$(totPnl)+
-      '<small>'+(totCost>0?pc(totPnl/totCost*100,1):DASH)+'</small></div></div>'+
-    '<div class="dc"><div class="k">In profit</div><div class="v">'+winners+'<small>of '+pos.length+'</small></div></div>'+
-    '<div class="dc"><div class="k">Flagged exiting</div><div class="v '+(exiting?'down':'')+'">'+exiting+
-      '<small>'+building+' building</small></div></div>'+
+  // ── the book
+  h+='<div class="sec"><div class="sec-h"><h2>Book</h2><span class="sub">open positions, valued at the live price where the market is tracked</span>'+
+    '<span class="meta">'+pos.length+' open &middot; '+$(b.value)+'</span></div>';
+  if(!pos.length)h+='<div class="empty">This account holds no open positions right now.</div>';
+  else{
+    h+='<table><thead><tr>'+th('ac','market','Market',{asc:1})+th('ac','side','Side',{asc:1,w:'112px'})+
+      th('ac','size','Size',{cls:'r',w:'64px'})+th('ac','entry','Entry',{cls:'r',w:'58px'})+
+      th('ac','now','Now',{cls:'r',w:'58px'})+th('ac','value','Value',{cls:'r',w:'78px'})+
+      th('ac','pnl','P&amp;L',{cls:'r',w:'82px'})+th('ac','pct','P&amp;L %',{cls:'r',w:'68px'})+
+      th('ac','closes','Closes',{cls:'r',w:'66px',asc:1})+th('ac','top','Top traders',{cls:'r',w:'124px'})+'</tr></thead><tbody>';
+    sortRows(pos,'ac').slice(0,accAll?pos.length:25).forEach(function(p){
+      const c=cd(p.hoursLeft);
+      h+='<tr class="row" data-pm="'+E(p.conditionId)+'" data-name="'+E(p.title)+'" title="'+E(p.title)+'\nclick for the chart, live book and holders">'+
+        '<td class="mk tx">'+E(p.title)+'</td>'+
+        '<td><span class="side '+sideCls(p.outcome)+'">'+E(cut(p.outcome,14))+'</span></td>'+
+        '<td class="r">'+sz(p.size)+'</td><td class="r mu">'+px(p.avgPrice)+'</td>'+
+        '<td class="r"'+(p.live?'':' title="Not in the tracked universe: this is Polymarket\'s last price for the position."')+'>'+px(p.curPrice)+'</td>'+
+        '<td class="r">'+$(p.value)+'</td>'+
+        '<td class="r"><span class="lead '+cl(p.pnl)+'" style="font-size:14px">'+$(p.pnl)+'</span></td>'+
+        '<td class="r '+cl(p.pct)+'">'+pc(p.pct,1)+'</td>'+
+        '<td class="r"><span class="cd '+c.c+'">'+c.t+'</span></td>'+
+        '<td class="r">'+topCell(p.top)+'</td></tr>';
+    });
+    h+='</tbody></table>'+(pos.length>25?'<div class="more"><button id="acc-more">'+(accAll?'Show fewer':'Show all '+pos.length)+'</button></div>':'');
+  }
+  h+='</div>';
+
+  // ── the record
+  h+='<div class="sec"><div class="sec-h"><h2>Track record</h2><span class="sub">how this account\'s closed positions turned out</span>'+
+    '<span class="meta">'+(r.n?r.n+' positions &middot; '+fmtT(r.from)+' to '+fmtT(r.to):'')+'</span></div>'+
+    '<div class="sec-note">Each closed or resolved position counts once, newest first'+(r.truncated?' (the most recent '+r.max+')':'')+'. '+
+    'Cost is the shares bought times the average price paid, and P&amp;L is Polymarket\'s own figure. A position counts as won if it made money, '+
+    'whether it was held to resolution or sold early. Break-even is the average price paid read as a win rate.</div>';
+  if(!r.n){ h+='<div class="empty">This account has no closed positions to score.</div></div>'; setH(el,h); return; }
+  if(r.small)h+='<div class="scn"><b>The sample is small.</b> Only '+r.n+' closed position'+(r.n===1?'':'s')+'. A hit rate this early is mostly luck.</div>';
+  const w3=r.withoutTop3||{};
+  h+='<div class="dg">'+
+    '<div class="dc"><div class="k">Won</div><div class="v">'+r.wins+'<small>of '+r.n+'</small></div></div>'+
+    '<div class="dc"><div class="k">Edge over break-even</div><div class="v '+cl(r.edge)+'">'+(r.edge>0?'+':'')+r.edge.toFixed(0)+' pts</div></div>'+
+    '<div class="dc"><div class="k">Return on cost</div><div class="v '+cl(r.roi)+'">'+(r.roi!=null?pc(r.roi,1):DASH)+'<small>'+$(r.pnl)+' on '+$(r.cost)+'</small></div></div>'+
+    '<div class="dc"><div class="k">Median position</div><div class="v '+cl(r.medRet)+'">'+pc(r.medRet,0)+'<small>average '+pc(r.avgRet,0)+'</small></div></div>'+
+    (w3.n?'<div class="dc"><div class="k">Without the 3 biggest wins</div><div class="v '+cl(w3.pnl)+'">'+$(w3.pnl)+'<small>'+(w3.roi!=null?pc(w3.roi,1)+' on cost':'')+'</small></div></div>':'')+
   '</div>';
+  if(r.top3N&&r.pnl>0&&r.top3Pnl>r.pnl*0.5)
+    h+='<div class="sec-note" style="margin-top:12px">The '+r.top3N+' largest wins made <b>'+$(r.top3Pnl)+'</b>, '+
+      Math.round(r.top3Pnl/r.pnl*100)+'% of the net profit. Most of this record rests on a few positions.</div>';
+  h+='</div>';
 
-  h+='<table><thead><tr>'+th('me','market','Market',{asc:1})+th('me','side','Side',{asc:1,w:'112px'})+
-    th('me','size','Size',{cls:'r',w:'64px'})+th('me','entry','Entry',{cls:'r',w:'58px'})+
-    th('me','now','Now',{cls:'r',w:'58px'})+th('me','value','Value',{cls:'r',w:'74px'})+
-    th('me','pnl','P&amp;L',{cls:'r',w:'78px'})+th('me','pct','P&amp;L %',{cls:'r',w:'68px'})+
-    th('me','held','Held',{cls:'r',w:'56px'})+th('me','closes','Closes',{cls:'r',w:'66px',asc:1})+
-    '<th style="width:140px">Signal</th><th style="width:26px"></th></tr></thead><tbody>';
-  sortRows(pos,'me').forEach(function(p){
-    const s=sig[p.asset], o=openMine.has(p.asset), c=cd(p.hoursLeft);
-    h+='<tr class="row '+(o?'open':'')+'" data-mine="'+E(p.asset)+'" title="'+E(p.title)+
-        '\nentry '+px(p.avgPrice)+' &middot; now '+px(p.curPrice)+'\nclick for the full signal breakdown">'+
-      '<td class="mk tx"><span class="car"></span>'+E(p.title)+(p.manual?'<span class="bdg h" title="You typed this position in. It is not read from Polymarket.">manual</span>':'')+'</td>'+
-      '<td><span class="side '+sideCls(p.outcome)+'">'+E(cut(p.outcome,14))+'</span></td>'+
-      '<td class="r">'+sz(p.size)+'</td>'+
-      '<td class="r mu">'+px(p.avgPrice)+'</td>'+
-      '<td class="r"'+(p.priceKnown===false?' title="No live price was found for this market. This is the last price seen."':'')+'>'+px(p.curPrice)+(p.priceKnown===false?'<span class="am">?</span>':'')+'</td>'+
-      '<td class="r">'+$(p.currentValue)+'</td>'+
-      '<td class="r"><span class="lead '+cl(p.cashPnl)+'" style="font-size:14px">'+$(p.cashPnl)+'</span></td>'+
-      '<td class="r '+cl(p.percentPnl)+'">'+pc(p.percentPnl,1)+'</td>'+
-      '<td class="r mu">'+heldFor(p.heldMs)+'</td>'+
-      '<td class="r">'+(p.settled?'<span class="mu">settled</span>':'<span class="cd '+c.c+'">'+c.t+'</span>')+'</td>'+
-      '<td>'+(s?'<span class="flag '+flagCls(s.flag)+'">'+flagTxt(s.flag)+'</span>':'<span class="mu">'+DASH+'</span>')+'</td>'+
-      '<td class="c">'+(p.manual?'<span class="del" data-del="'+E(p.id)+'" title="Remove this hand-entered position">&times;</span>':'')+'</td></tr>';
-    if(o&&s){
-      h+='<tr class="drawer"><td colspan="12"><div class="dw">'+
-        '<div class="dg">'+
-          '<div class="dc"><div class="k">Top wallets, your side</div><div class="v">'+s.topSameSide+
-            '<small>of '+s.topTotal+' in this market</small></div></div>'+
-          '<div class="dc"><div class="k">Other side</div><div class="v">'+s.topOppSide+'</div></div>'+
-          '<div class="dc"><div class="k">Exited since tracking</div><div class="v '+(s.exitedCount?'down':'')+'">'+s.exitedCount+'</div></div>'+
-          '<div class="dc"><div class="k">Newly entered</div><div class="v '+(s.enteredCount?'up':'')+'">'+s.enteredCount+'</div></div>'+
-          '<div class="dc"><div class="k">Consensus side</div><div class="v">'+E(cut(s.consensusSide||DASH,16))+
-            (s.consensusShifted?'<small class="down">moved from '+E(cut(s.initialSide,16))+'</small>':'<small>unchanged</small>')+'</div></div>'+
-          '<div class="dc"><div class="k">Your entry vs now</div><div class="v">'+px(s.myEntry)+ARROW+px(s.curPrice)+
-            (s.avgTopEntry!=null?'<small>top wallets ~'+px(s.avgTopEntry)+'</small>':'')+'</div></div>'+
-        '</div>'+
-        '<div class="ds"><div class="t">What the rule looked at</div>'+
-          '<ul class="facts">'+(s.facts||[]).map(function(f){return '<li>'+E(f)+'</li>'}).join('')+'</ul></div>'+
-        '<div class="ds"><div class="t">How this flag is decided</div>'+
-          '<ul class="facts">'+
-          '<li><b>wallets building</b> — more top wallets entered than exited, and your side holds at least as many as the other</li>'+
-          '<li><b>wallets exiting</b> — more exited than entered, or consensus moved away from your side while it holds more wallets</li>'+
-          '<li><b>mixed</b> — neither condition is met</li>'+
-          '</ul></div>'+
-        '<div class="ds"><div class="t">Price history</div>'+chartHtml(p.conditionId,0)+'</div>'+
-        '<div class="risk">This is a count of public wallet activity, nothing more. It does not know your thesis, '+
-        'your sizing, or anything those wallets hold elsewhere. Not financial advice — the decision is yours.</div>'+
-        '<div class="ds" style="margin-top:10px;display:flex;gap:14px;align-items:center">'+
-          '<button class="xbtn" data-pm="'+E(p.conditionId)+'" data-name="'+E(p.title)+'">Who else holds it</button>'+
-          pmLink(p.slug,'open market on polymarket.com')+'</div>'+
-      '</div></td></tr>';
-    }
-  });
-  h+='</tbody></table></div>';
+  const band=function(c){ return c.lo+' to '+(c.hi>=100?'100':c.hi)+'c'; };
+  h+='<div class="two"><div class="sec"><div class="sec-h"><h2>By price paid</h2><span class="sub">did cheap and expensive sides win as often as priced</span></div>'+
+    '<table class="mini"><thead><tr><th>Price paid</th><th class="r">Positions</th><th class="r">Hit rate</th><th class="r">Avg price</th><th class="r">Edge</th><th class="r">P&amp;L</th></tr></thead><tbody>'+
+    r.cal.map(function(c){ const e=c.hit!=null?c.hit-c.avgEntry:null;
+      return '<tr><td class="mono">'+band(c)+'</td><td class="r">'+c.n+'</td><td class="r">'+(c.hit!=null?c.hit.toFixed(0)+'%':DASH)+'</td>'+
+        '<td class="r mu">'+(c.avgEntry!=null?c.avgEntry.toFixed(0)+'c':DASH)+'</td>'+
+        '<td class="r '+cl(e)+'">'+(e!=null?(e>0?'+':'')+e.toFixed(0)+' pts':DASH)+'</td><td class="r '+cl(c.pnl)+'">'+(c.n?$(c.pnl):DASH)+'</td></tr>'; }).join('')+
+    '</tbody></table></div>'+
+    '<div class="sec"><div class="sec-h"><h2>By category</h2></div>'+
+    '<table class="mini"><thead><tr><th>Category</th><th class="r">Positions</th><th class="r">Hit rate</th><th class="r">Edge</th><th class="r">P&amp;L</th><th class="r">On cost</th></tr></thead><tbody>'+
+    r.byCat.map(function(c){
+      return '<tr><td>'+E(c.cat)+'</td><td class="r">'+c.n+'</td><td class="r">'+c.hit.toFixed(0)+'%</td>'+
+        '<td class="r '+cl(c.edge)+'">'+(c.edge>0?'+':'')+c.edge.toFixed(0)+' pts</td><td class="r '+cl(c.pnl)+'">'+$(c.pnl)+'</td>'+
+        '<td class="r '+cl(c.roi)+'">'+(c.roi!=null?pc(c.roi,1):DASH)+'</td></tr>'; }).join('')+
+    '</tbody></table></div></div>';
+
+  const recRow=function(p,res){
+    return '<tr class="pr" data-pm="'+E(p.cid)+'" data-name="'+E(p.title)+'" title="'+E(p.title)+'\n'+E(p.how)+'">'+
+      (res?'<td><span class="tag g-'+(p.won?'won':'lost')+'" style="display:inline-block">'+(p.won?'WON':'LOST')+'</span></td>':'')+
+      '<td class="mk tx">'+E(p.title)+'</td><td><span class="side '+sideCls(p.outcome)+'">'+E(cut(p.outcome,12))+'</span></td>'+
+      '<td class="r">'+px(p.entry)+'</td><td class="r '+cl(p.pnl)+'">'+$(p.pnl)+'</td><td class="r '+cl(p.ret)+'">'+pc(p.ret*100,0)+'</td>'+
+      (res?'<td class="r mu">'+$(p.cost)+'</td><td class="r mu">'+fmtT(p.ts)+'</td>':'')+'</tr>'; };
+  const mini=function(rows){ return '<table class="mini"><thead><tr><th>Market</th><th style="width:96px">Side</th><th class="r" style="width:56px">Entry</th>'+
+    '<th class="r" style="width:84px">P&amp;L</th><th class="r" style="width:64px">Return</th></tr></thead><tbody>'+rows.map(function(p){return recRow(p,false)}).join('')+'</tbody></table>'; };
+  if((r.best||[]).length||(r.worst||[]).length)
+    h+='<div class="two"><div class="sec"><div class="sec-h"><h2>Biggest wins</h2></div>'+(r.best.length?mini(r.best):'<div class="empty">No winning positions.</div>')+'</div>'+
+      '<div class="sec"><div class="sec-h"><h2>Biggest losses</h2></div>'+(r.worst.length?mini(r.worst):'<div class="empty">No losing positions.</div>')+'</div></div>';
+
+  h+='<div class="sec"><div class="sec-h"><h2>Recently closed</h2><span class="sub">most recent first</span></div>'+
+    '<table class="mini"><thead><tr>'+th('ar','res','Result',{w:'62px',asc:1})+th('ar','market','Market',{asc:1})+th('ar','side','Side',{w:'100px',asc:1})+
+    th('ar','entry','Entry',{cls:'r',w:'56px'})+th('ar','pnl','P&amp;L',{cls:'r',w:'84px'})+th('ar','ret','Return',{cls:'r',w:'68px'})+
+    th('ar','cost','Cost',{cls:'r',w:'78px'})+th('ar','when','Closed',{cls:'r',w:'116px'})+'</tr></thead><tbody>'+
+    sortRows(r.recent,'ar').slice(0,accRecAll?r.recent.length:15).map(function(p){return recRow(p,true)}).join('')+'</tbody></table>'+
+    (r.recent.length>15?'<div class="more"><button id="acc-rec-more">'+(accRecAll?'Show fewer':'Show more')+'</button></div>':'')+'</div>';
   setH(el,h);
-}
-
-function rAlerts(){
-  const m=D.me||{}, el=document.getElementById('sec-alerts');
-  if(!(m.positions||[]).length){ setH(el,''); return; }
-  const a=m.alerts||[];
-  let h='<div class="sec-h"><h2>Overlap Alerts</h2>'+
-    '<span class="sub">top wallets moving in markets you also hold</span>'+
-    '<span class="meta">'+(a.length?a.length+' events':'')+'</span></div>';
-  if(!a.length){
-    h+='<div class="empty">No changes detected yet in your markets.<br>'+
-       'Exits, trims and new entries by top wallets appear here as they happen, most recent first.</div>';
-    setH(el,h); return;
-  }
-  h+='<div class="al">'+a.map(function(x){
-    const lbl=x.type==='EXIT'?'EXIT':x.type==='TRIM'?'TRIM':'ENTRY';
-    const detail=x.type==='EXIT'?'closed out '+sz(x.hadSize)
-      :x.type==='TRIM'?sz(x.hadSize)+ARROW+sz(x.nowSize)
-      :'opened '+sz(x.nowSize);
-    return '<div class="alr" title="'+E(x.trader)+' '+
-      (x.type==='EXIT'?'fully exited':x.type==='TRIM'?'reduced':'opened a position in')+
-      '\n'+E(x.market)+'\nside '+E(x.side)+' &middot; '+detail+
-      '\ndetected '+fmtT(x.ts)+'">'+
-      '<span class="lgt">'+ago(x.ts)+'</span>'+
-      '<span class="tag a-'+x.type.toLowerCase()+'">'+lbl+'</span>'+
-      '<span class="lgw">'+tl(x.wallet,x.trader,14)+'</span>'+
-      '<span class="side '+sideCls(x.side)+'">'+E(cut(x.side,13))+'</span>'+
-      '<span class="lgm clk" data-ev="'+E(evId(x))+'">'+E(x.market)+'</span>'+
-      '<span class="sz">'+detail+'</span></div>'+
-      (openEv.has(evId(x))?mktDetail(x.conditionId):'');
-  }).join('')+'</div>';
-  setH(el,h);
-}
-
-/* manual book form: the inputs are permanent elements, only the result list is redrawn */
-let mSel=null, mTimer=null, mSeq=0;
-function mEl(id){ return document.getElementById(id); }
-function hideRes(){ mEl('m-res').style.display='none'; }
-function mReady(){
-  const e=parseFloat(mEl('m-entry').value), s=parseFloat(mEl('m-shares').value);
-  const ok=!!mSel&&e>0&&e<100&&s>0;
-  mEl('m-add').disabled=!ok;
-  mEl('m-sel').innerHTML=mSel?'Selected: <b>'+E(mSel.title)+'</b>'+(ok?' &middot; cost '+$(e/100*s)+' for '+sz(s)+' shares of '+E(mEl('m-side').value):''):'';
-}
-function mSearch(){
-  const text=mEl('m-q').value.trim(), my=++mSeq, box=mEl('m-res');
-  if(text.length<2){ hideRes(); return; }
-  fetch('/api/search?q='+encodeURIComponent(text),{cache:'no-store'})
-    .then(function(r){ return r.json(); })
-    .then(function(j){
-      if(my!==mSeq)return;
-      const rs=j.results||[];
-      box.innerHTML=rs.length?rs.map(function(r,i){
-        return '<div data-pick="'+i+'"><span>'+E(r.title)+'</span><span class="v">'+
-          r.outcomes.map(function(o,k){return E(cut(o,10))+' '+px(r.prices[k])}).join(' &middot; ')+'</span></div>'}).join('')
-        :'<div class="e">No tracked market matches. Only live markets and markets a tracked trader holds can be added.</div>';
-      box._rs=rs; box.style.display='block';
-    }).catch(function(){ if(my===mSeq)hideRes(); });
-}
-function mPick(i){
-  const r=(mEl('m-res')._rs||[])[i]; if(!r)return;
-  mSel=r; hideRes();
-  mEl('m-q').value=r.title;
-  const sel=mEl('m-side');
-  sel.innerHTML=r.outcomes.map(function(o){return '<option value="'+E(o)+'">'+E(o)+'</option>'}).join('');
-  sel.disabled=false;
-  mPrice(); mEl('m-err').textContent=''; mEl('m-shares').focus(); mReady();
-}
-function mPrice(){            // pre-fill the entry with the side's current price; you overwrite it with what you paid
-  if(!mSel)return;
-  const i=mSel.outcomes.indexOf(mEl('m-side').value), p=mSel.prices[i];
-  mEl('m-entry').value=p!=null?(p*100).toFixed(1):'';
-}
-function mAdd(){
-  if(!mSel)return;
-  const body={cid:mSel.cid,outcome:mEl('m-side').value,entry:parseFloat(mEl('m-entry').value)/100,shares:parseFloat(mEl('m-shares').value)};
-  mEl('m-add').disabled=true;
-  fetch('/api/book',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(function(r){ return r.json(); })
-    .then(function(j){
-      if(j.error){ mEl('m-err').textContent=j.error; mReady(); return; }
-      mSel=null; mEl('m-q').value=''; mEl('m-entry').value=''; mEl('m-shares').value='';
-      mEl('m-side').innerHTML='<option>pick a market</option>'; mEl('m-side').disabled=true;
-      mEl('m-err').textContent=''; mReady();
-      toast('Added to your book','It is valued with live prices from now on.');
-      load(true);
-    }).catch(function(){ mEl('m-err').textContent='Could not reach the local server.'; mReady(); });
-}
-function mDel(id){
-  fetch('/api/book?id='+encodeURIComponent(id),{method:'DELETE'}).then(function(){ load(true); }).catch(function(){});
 }
 
 /* ══ NOW ══ */
@@ -2244,7 +2171,14 @@ function rScore(){
     '<div class="dc"><div class="k"><span data-def="hit">Hit rate</span></div><div class="v">'+(o.hit!=null?o.hit.toFixed(0)+'%':DASH)+'<small>'+(o.breakEven!=null?'break-even '+o.breakEven.toFixed(0)+'%':'no resolved plays')+'</small></div></div>'+
     '<div class="dc"><div class="k">Edge over break-even</div><div class="v '+cl(edge)+'">'+(edge!=null?(edge>0?'+':'')+edge.toFixed(0)+' pts':DASH)+'</div></div>'+
     '<div class="dc"><div class="k">Avg return per play</div><div class="v '+cl(o.avgRet)+'">'+(o.avgRet!=null?pc(o.avgRet,0):DASH)+'<small>equal stake on each</small></div></div>'+
-  '</div></div>';
+    (s.typical&&s.typical.withoutTop3!=null?
+    '<div class="dc"><div class="k">Without the 3 biggest wins</div><div class="v '+cl(s.typical.withoutTop3)+'">'+pc(s.typical.withoutTop3,0)+'<small>median play '+pc(s.typical.median,0)+'</small></div></div>':'')+
+  '</div>'+
+  (s.typical&&s.typical.withoutTop3!=null&&o.avgRet!=null&&(o.avgRet>0)!==(s.typical.withoutTop3>0)?
+    '<div class="sec-note" style="margin-top:12px">The average and the typical play disagree. A cheap side that wins pays many times its stake '+
+    '(the three largest wins returned '+s.typical.top3.map(function(r){return pc(r,0)}).join(', ')+'), so a handful of longshots can lift the average '+
+    'while most plays lose money. Read the hit rate against break-even, and the return without the biggest wins, before the average.</div>':'')+
+  '</div>';
 
   h+=scoreCharts(s);
   h+='<div class="sec"><div class="sec-h"><h2>By score</h2><span class="sub">does a higher score actually win more often</span></div>'+
@@ -2306,6 +2240,7 @@ function panelHead(kind,title,extra){
 function traderPanel(p){
   const d=need('t',p.id), j=d.data||{}, m=j.meta, name=(m&&m.userName)||p.name||short(p.id), fo=!!follows[p.id];
   let h=panelHead('Trader',E(name)+(m?srcB(m.src):''),
+    '<button class="xbtn" data-acctgo="'+E(p.id)+'" title="Open this wallet on the Account tab: its full book and track record">Track record</button>'+
     '<button class="xbtn'+(fo?' on':'')+'" data-follow="'+E(p.id)+'" data-name="'+E(name)+'">'+(fo?'&#9733; Following':'&#9734; Follow')+'</button>');
   h+='<div class="pb">';
   if(!d.loaded)return h+'<span class="mu">Loading this trader\'s book&hellip;</span></div>';
@@ -2447,7 +2382,7 @@ function renderSet(){
 
 /* ═══ WALKTHROUGH ═══ shown once, reopened from Guide in the header */
 const TOUR=[
-  ['.nav','Seven tabs','Now is the live board. Traders is the leaderboards. Consensus shows where top traders agree. Markets lists everything they hold. Heatmap draws the most-traded markets by size and move. Scorecard checks how past scores actually resolved. My Book is for your own positions.'],
+  ['.nav','Seven tabs','Now is the live board. Traders is the leaderboards. Consensus shows where top traders agree. Markets lists everything they hold. Heatmap draws the most-traded markets by size and move. Scorecard checks how past scores actually resolved. Account looks up any public account: its book and its track record.'],
   ['#brief','The briefing','One line on what closes soon, the biggest move in the last hour, and the largest new position by a top trader. Click any market or trader name in it to open the detail.'],
   ['#hero','Top candidate','The best play that clears a minimum bar, with a plain-language verdict and caution chips built from the data. If nothing clears the bar, it says so instead of showing the best of a weak list.'],
   ['#tw-sec','Trade Window','Every short-horizon play, ranked by score. Filter by hours left, spread, liquidity, price and category. Click a column to sort. Open a row for entry math, the score breakdown, a stake calculator, the real price chart and the live order book with a fill simulator.'],
@@ -2501,7 +2436,7 @@ function kbItems(){
 }
 function navKey(el){
   const c=el.matches('tr')?el:(el.querySelector('[data-mkt],[data-ev],[data-pm]')||el), d=c.dataset;
-  return d.h||d.w||d.m||d.mine||d.mkt||d.ev||d.pm||'';
+  return d.h||d.w||d.m||d.mkt||d.ev||d.pm||'';
 }
 function applyKb(scroll){
   const old=document.querySelectorAll('.kb');
@@ -2524,7 +2459,7 @@ document.addEventListener('keydown',function(e){
   if(sheetOpen&&e.key==='Escape'){ sheet(false); return; }
   const tag=e.target.tagName, typing=tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA';
   if(e.key==='Escape'){
-    if(typing){ e.target.blur(); hideRes(); return; }
+    if(typing){ e.target.blur(); return; }
     if(tourI>=0){ tourEnd(); return; }
     if(setOpen){ setOpen=false; renderSet(); return; }
     if(defPinned){ hideDef(); return; }
@@ -2551,7 +2486,7 @@ document.addEventListener('keydown',function(e){
     if(st)st.click();
   }
   else if(e.key==='/'){
-    const id={traders:'f-lb',consensus:'f-cons',markets:'q',mine:'m-q',now:'tw-h'}[view], box=id&&document.getElementById(id);
+    const id={traders:'f-lb',consensus:'f-cons',markets:'q',acct:'acct-q',now:'tw-h'}[view], box=id&&document.getElementById(id);
     if(box){ e.preventDefault(); box.focus(); box.select(); }
     else{ e.preventDefault(); ckShow(); }       // a tab with no filter of its own searches everything
   }
@@ -2895,14 +2830,16 @@ function copyText(text,title,body){
 }
 /* The address bar always names the tab and any open panel, so a link reopens the same view. */
 function syncHash(){
-  const top=panelStack[panelStack.length-1], h='#'+view+(top?'/'+top.kind+'/'+encodeURIComponent(top.id):'');
+  const top=panelStack[panelStack.length-1], h='#'+view+(top?'/'+top.kind+'/'+encodeURIComponent(top.id)
+    :view==='acct'&&P.acct?'/a/'+encodeURIComponent(P.acct):'');
   if(location.hash!==h){ try{ history.replaceState(null,'',h); }catch(e){} }
 }
-function hashParts(){ return /^#([a-z]+)(?:\/([mt])\/(.+))?$/.exec(location.hash||''); }
+function hashParts(){ return /^#([a-z]+)(?:\/([mta])\/(.+))?$/.exec(location.hash||''); }
 window.addEventListener('hashchange',function(){
   const m=hashParts(); if(!m)return;
   if(VIEWS.indexOf(m[1])>=0&&m[1]!==view)setView(m[1]);
-  if(m[2])openPanel(m[2],decodeURIComponent(m[3])); else if(panelStack.length)closePanel();
+  if(m[2]==='a'){ const u=decodeURIComponent(m[3]); if(u!==P.acct)accLookup(u); }
+  else if(m[2])openPanel(m[2],decodeURIComponent(m[3])); else if(panelStack.length)closePanel();
 });
 function copyLink(){ syncHash(); copyText(location.href,'Link copied','It reopens this tab'+(panelStack.length?' and this panel':'')+' on this computer.'); }
 function briefMd(j){
@@ -2960,7 +2897,7 @@ function sheet(on){
 /* ═══ COMMAND PALETTE ═══
    Ctrl K (or Cmd K). Type to search every live market and tracked trader, or
    to run a command. With nothing typed it lists your watchlist and the commands. */
-const TABN={mine:'My Book',now:'Now',traders:'Traders',consensus:'Consensus',markets:'Markets',map:'Heatmap',score:'Scorecard'};
+const TABN={now:'Now',traders:'Traders',consensus:'Consensus',markets:'Markets',map:'Heatmap',score:'Scorecard',acct:'Account'};
 let ckOpen=false, ckSel=0, ckItems=[], ckRem={q:null,markets:[],traders:[]}, ckT=null, ckSeq=0;
 function ckCmds(){
   return VIEWS.map(function(v,i){
@@ -3050,7 +2987,7 @@ function runAct(a){
 /* render */
 function renderView(){
   if(!D||!D.initialized||!tabLoaded[view])return;   // never paint a tab from data it has not received
-  if(view==='mine'){ rMine(); rAlerts(); }
+  if(view==='acct'){ rAcct(); accStale(); }
   if(view==='now'){ rBrief(); rHero(); rHourly(); rMovers(); rResolving(); rFlow(); rTape(); }
   if(view==='traders'){ rLB(); rDVW(); }
   if(view==='consensus'){ rQuick(); rCons(); rConv(); }
@@ -3074,7 +3011,6 @@ function render(){
     return; }
   document.getElementById('boot').style.display='none';
   document.getElementById('app').style.display='block';
-  rPin();
   renderView();
   hdr(); rWatch(); renderPanel();
   hud();
@@ -3088,7 +3024,7 @@ const prevTxt=new Map();
 /* after every render: flash numbers that changed since the last poll */
 function hud(){
   if(firstPaint){ firstPaint=false; enter(); decode(document.getElementById('brand-t')); }
-  const els=document.querySelectorAll('.hs b,.hstat .v,.hero-px,.mine-sum .v,.pin b,.sbar b');
+  const els=document.querySelectorAll('.hs b,.hstat .v,.hero-px,.acc-sum .v,.sbar b');
   for(let i=0;i<els.length;i++){
     const el=els[i], k=(el.closest('[id]')||{}).id+':'+i, t=el.firstChild?el.firstChild.textContent:'';
     const p=prevTxt.get(k);
@@ -3100,7 +3036,7 @@ function hud(){
 function enter(){
   if(RM)return;
   const v=document.getElementById('v-'+view); if(!v)return;
-  const blocks=v.querySelectorAll(':scope>#brief,:scope>#hero,:scope>#mybook,:scope>.sec,:scope>.two>.sec,:scope>#score>.sec,:scope>#score>.two>.sec');
+  const blocks=v.querySelectorAll(':scope>#brief,:scope>#hero,:scope>#acct>.acc,:scope>#acct>.sec,:scope>#acct>.two>.sec,:scope>.sec,:scope>.two>.sec,:scope>#score>.sec,:scope>#score>.two>.sec');
   for(let i=0;i<blocks.length;i++){ blocks[i].setAttribute('data-st',''); blocks[i].style.setProperty('--d',(i*0.06)+'s'); }
   const rows=v.querySelectorAll('tbody tr.row');
   for(let i=0;i<rows.length&&i<14;i++)rows[i].style.setProperty('--d',(0.14+i*0.022)+'s');
@@ -3192,7 +3128,6 @@ document.addEventListener('click',function(ev){
   const df=t.closest('[data-def]');
   if(df&&!t.closest('th.s'))showDef(df,true); else if(!t.closest('#pop'))hideDef();
   if(setOpen&&!t.closest('#setp')&&!t.closest('#alerts-btn')&&!t.closest('#watch-set')){ setOpen=false; renderSet(); }
-  if(!t.closest('.mform'))hideRes();
 
   // command palette, keyboard sheet, and every data-act control
   const ci=t.closest('.ck-i'); if(ci){ ckRun(+ci.dataset.i); return; }
@@ -3226,14 +3161,16 @@ document.addEventListener('click',function(ev){
   const st=t.closest('[data-star]'); if(st){ toggleStar(st.dataset.star,st.dataset.name); return; }
   const fo=t.closest('[data-follow]'); if(fo){ toggleFollow(fo.dataset.follow,fo.dataset.name); return; }
 
-  // manual book
-  const pk=t.closest('[data-pick]'); if(pk){ mPick(+pk.dataset.pick); return; }
-  if(t.id==='m-add'){ mAdd(); return; }
-  const dl=t.closest('[data-del]'); if(dl){ mDel(dl.dataset.del); return; }
+  // account lookup
+  if(t.id==='acct-go'){ accLookup(document.getElementById('acct-q').value); return; }
+  const ak=t.closest('[data-acct]'); if(ak){ accLookup(ak.dataset.acct); return; }
+  const ag=t.closest('[data-acctgo]'); if(ag){ closePanel(); setView('acct'); accLookup(ag.dataset.acctgo); return; }
+  if(t.id==='acc-more'){ accAll=!accAll; rAcct(); return; }
+  if(t.id==='acc-rec-more'){ accRecAll=!accRecAll; rAcct(); return; }
 
   if(t.closest('a'))return;
   if(t.closest('[data-stake]'))return;
-  if(t.closest('[data-h],[data-w],[data-m],[data-mine],[data-mkt],[data-ev]'))fresh();
+  if(t.closest('[data-h],[data-w],[data-m],[data-mkt],[data-ev]'))fresh();
   if(t.closest('#rf')){manualRefresh();return}
   const nv=t.closest('.nav button'); if(nv){setView(nv.dataset.v);return}
   const go=t.closest('[data-goto]'); if(go){setView(go.dataset.goto);return}
@@ -3263,8 +3200,6 @@ document.addEventListener('click',function(ev){
   if(t.id==='tw-more'){ twAll=!twAll; rHourly(); hdr(); return; }
   if(t.id==='sc-more'){ scAll=!scAll; rScore(); return; }
 
-  const mp=t.closest('[data-mine]'); if(mp){const k=mp.dataset.mine;
-    if(openMine.has(k))openMine.delete(k); else openMine.add(k); rMine();return}
   const p=t.closest('[data-p]'); if(p){P.period=p.dataset.p;save();rLB();return}
   const o=t.closest('[data-o]'); if(o){P.ob=o.dataset.o;save();rLB();return}
   // quick-money paging
@@ -3315,8 +3250,6 @@ document.addEventListener('input',function(e){
   else if(t.id==='f-cons'){ P.consFilter=t.value; save(); rCons(); }
   else if(t.dataset&&t.dataset.stake){ P.stake=t.value.replace(/[^0-9.]/g,''); save(); renderAll(); }
   else if(t.id==='cmdk-q'){ ckInput(); }
-  else if(t.id==='m-q'){ mSel=null; mEl('m-side').disabled=true; mReady(); clearTimeout(mTimer); mTimer=setTimeout(mSearch,180); }
-  else if(t.id==='m-entry'||t.id==='m-shares'){ mReady(); }
   else if(t.id==='set-move'){ const v=parseFloat(t.value); if(v>0){ P.moveC=v; save(); } }
   else if(t.closest&&t.closest('#tw-ctl')){
     const num=function(id,lo,hi,d){ const v=parseFloat(document.getElementById(id).value); return isNaN(v)?d:Math.max(lo,Math.min(hi,v)); };
@@ -3327,14 +3260,13 @@ document.addEventListener('input',function(e){
 });
 document.addEventListener('change',function(e){
   const t=e.target;
-  if(t.id==='m-side'){ mPrice(); mReady(); }
-  else if(t.id==='set-notify'){
+  if(t.id==='set-notify'){
     if(!t.checked){ P.notify=false; save(); rWatch(); return; }
     Notification.requestPermission().then(function(p){ P.notify=p==='granted'; save(); renderSet(); rWatch(); });
   }
 });
-document.getElementById('m-q').addEventListener('focus',function(){ if(!mSel&&mEl('m-q').value.trim().length>=2)mSearch(); });
-document.addEventListener('keydown',function(e){ if(e.key==='Enter'&&e.target.closest&&e.target.closest('.mform')&&!mEl('m-add').disabled)mAdd(); });
+document.getElementById('acct-q').value=P.acct||'';
+document.getElementById('acct-q').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); accLookup(e.target.value); } });
 
 /* start: put remembered filters back in their boxes, open the remembered tab */
 function twInputs(){
@@ -3347,7 +3279,9 @@ document.getElementById('q').value=P.q; document.getElementById('f-lb').value=P.
   const bs=document.querySelectorAll('.nav button');
   for(let i=0;i<bs.length;i++)bs[i].classList.toggle('on',bs[i].dataset.v===view); })();
 if(P.dense)document.body.classList.add('dense');
-(function(){ const m=hashParts(); if(m&&m[2])openPanel(m[2],decodeURIComponent(m[3])); else syncHash(); })();
+(function(){ const m=hashParts();
+  if(m&&m[2]==='a'){ P.acct=decodeURIComponent(m[3]); document.getElementById('acct-q').value=P.acct; }
+  else if(m&&m[2])openPanel(m[2],decodeURIComponent(m[3])); else syncHash(); })();
 rBar();
 load();
 setInterval(load,15000);

@@ -1,17 +1,21 @@
 # Poly Terminal
 
-A local, read-only terminal for Polymarket. It polls Polymarket's public APIs once a minute, tracks what the top leaderboard traders hold, ranks short-horizon markets, maps the whole market as a heatmap, and shows the live order book for anything you open. It never places orders and never asks for keys or logins. Nothing here is financial advice.
+A local, read-only data terminal for Polymarket, the prediction market. It reads Polymarket's public APIs once a minute, tracks what the top leaderboard traders hold, ranks short-horizon markets with a transparent score, maps the market as a heatmap, shows the live order book for anything you open, and looks up the book and track record of any public account.
 
-Plain Node and one HTML file. No dependencies, no build step, no account.
+The question behind it: **does what top traders hold, or a simple score built on price, momentum and liquidity, say anything about how a market resolves?** The Scorecard logs every pick the score makes and checks it against the real result, so the tool keeps an honest record of its own accuracy. So far it does not beat the market (see [Scorecard](#scorecard)).
 
-![The Now tab: briefing, top candidate and the Trade Window](docs/now.jpg)
+It never places orders and never asks for keys or logins. Nothing here is financial advice. Plain Node and one HTML file: no dependencies, no build step, no account.
+
+![The Now tab: briefing, top candidate and the Trade Window, filtered to crypto markets](docs/now.jpg)
 
 | | |
 |---|---|
-| ![Heatmap of the most-traded live markets](docs/heatmap.jpg) | ![Market panel with price chart, order book and fill simulator](docs/market-panel.jpg) |
+| ![Heatmap of the most-traded live politics markets](docs/heatmap.jpg) | ![Market panel with price chart, order book and fill simulator](docs/market-panel.jpg) |
 | **Heatmap.** Every tile is a market: area is volume, color is the move. | **Market panel.** Chart, live order book, fill simulator, holders. |
-| ![Command palette](docs/command-palette.jpg) | ![Scorecard with calibration and cumulative return](docs/scorecard.jpg) |
-| **Command palette.** Ctrl K searches every market and trader. | **Scorecard.** Did the scores actually win? Calibration and return. |
+| ![Scorecard with calibration and cumulative return](docs/scorecard.jpg) | ![Command palette](docs/command-palette.jpg) |
+| **Scorecard.** Did the scores actually win? Calibration and return. | **Command palette.** Ctrl K searches every market and trader. |
+| ![Account tab: a public account's open book](docs/account.jpg) | ![Account tab: the same account's track record](docs/account-record.jpg) |
+| **Account.** Any public account's open book, valued live. | **Track record.** How its closed positions turned out, by price paid and category. |
 
 ## Start it
 
@@ -23,8 +27,7 @@ Then open http://127.0.0.1:8890. That is all: plain Node (18 or newer), no insta
 
 - The first screen fills in after the first poll (about 10 to 30 seconds).
 - If the page stays on the boot screen, it tells you why. The usual cause is a network that filters polymarket.com (some school and office networks do). The server keeps retrying every minute and the page fills in on its own once Polymarket is reachable.
-- To link a public Polymarket account for the My Book tab: `set POLY_ME=0xYourWalletAddress` (or a username) and then `node server.js`. With nothing set, or if your account has no public profile, add positions by hand on the My Book tab instead.
-- History is kept in the `data` folder (price history, PnL history, order flow, alerts, the scorecard, your hand-entered positions). Delete a file there to reset that piece. The folder is created on first run and is not part of the repository.
+- History is kept in the `data` folder: price history, PnL history, order flow, the position baseline and the scorecard. Delete a file there to reset that piece. The folder is created on first run and is not part of the repository. Accounts looked up on the Account tab are never written to it.
 
 ## What each tab shows
 
@@ -48,9 +51,12 @@ Then open http://127.0.0.1:8890. That is all: plain Node (18 or newer), no insta
 
 **Heatmap**: the 180 most-traded live markets as a treemap, grouped by category. Tile area is 24h volume, liquidity or top-trader dollars. Tile color is the one-hour or 24-hour move in the first outcome's price, and every tile prints the number as well. Hover for the detail, click for the market.
 
-**Scorecard**: every play that reached the Trade Window, and whether it won. Hit rate and average return by score bucket and by category, always with the sample size, and a clear warning while the sample is too small to mean anything. Two charts sit on top: a calibration plot (did plays bought near 30c win about 30% of the time) and the cumulative return of staking one unit on every resolved play.
+**Scorecard**: every play that reached the Trade Window, and whether it won. Hit rate and average return by score bucket and by category, always with the sample size, and a clear warning while the sample is too small to mean anything. Two charts sit on top: a calibration plot (did plays bought near 30c win about 30% of the time) and the cumulative return of staking one unit on every resolved play. It also shows the average without the three biggest wins and the median play, because a few cheap winners can carry the average.
 
-**My Book**: your positions (from a linked account, typed in by hand, or both), valued with live prices, with a flag for whether top wallets in the same market are building or exiting, and a feed of their moves.
+**Account**: type any public Polymarket username or 0x wallet address.
+- *Book*: the account's open positions, valued at the live price where the market is tracked, with how many tracked top traders hold the same side and the other side.
+- *Track record*: its most recent closed and resolved positions (up to about 800). Hit rate against break-even, return on cost, the median position, profit without the three biggest wins, and splits by price paid and by category, plus its biggest wins and losses.
+- The address bar carries the account (`#acct/a/<name>`), so a link reopens it. "Track record" in any trader panel opens that wallet here.
 
 **Everywhere**
 - **Ctrl K** (or Cmd K) opens the command palette. Type to search every live market and tracked trader, jump to a tab, or run a command.
@@ -127,18 +133,25 @@ For markets with one or two top wallets.
 - up to 30 for dollars committed (log scale, full at $10,000)
 - 20 for a solo position, 10 for a pair
 
-### My Book flag
-
-- **wallets building**: more top wallets entered than exited since tracking began, and your side holds at least as many as the other.
-- **wallets exiting**: more exited than entered, or the consensus side moved away from yours while it holds more wallets.
-- **mixed**: neither.
-
 ### Scorecard
 
 The top 24 plays by score are logged once per market side, with the entry and score at that moment. A play past its end time is checked against Polymarket every 3 minutes until it resolves. A win returns (1 - entry) / entry, a loss returns -100%. Hit rate is wins over resolved plays. Edge is hit rate minus the average break-even of the same plays. Any group with fewer than 30 resolved plays is marked too small.
 
 - **Calibration** groups resolved plays by the price paid (0 to 20c, 20 to 40c, and so on) and plots each group's average entry against the share that won. A price is a claimed probability, so a well-priced group sits on the diagonal.
 - **Cumulative return** stakes one unit on every resolved play in the order they resolved. It ignores fees and assumes every fill at the logged entry.
+- **Without the 3 biggest wins** and the **median play** are there because returns on binary markets are lopsided. A side bought at 5c that wins returns +1,900%, so two or three longshots can turn the average positive while most plays lose. When the average and the typical play disagree, the page says so.
+
+**Results so far** (November 14, 2026, one day of logging): 153 resolved plays, a 50% hit rate against a 56% break-even, so an edge of -6 points. The average play returned +8%, but without its three biggest wins (+1,487%, +1,289% and +400%) it returned -13%. The sample is too small to separate skill from luck in either direction, and on this evidence the score does not beat the market price.
+
+### Account track record
+
+Built from the account's public positions with status CLOSED or REDEEMABLE (resolved, not yet redeemed), newest first. Each position counts once.
+
+- **Cost** is shares bought times the average price paid. **P&L** is Polymarket's own realized plus unrealized figure.
+- A position **won** if it made money, whether it was held to resolution or sold early.
+- **Break-even** is the average price paid read as a win rate, and **edge** is hit rate minus break-even. Because positions sold early count by P&L, edge here is a rough guide, not a calibration test.
+- **Return on cost** is total P&L over total cost. The **median position** and **profit without the 3 biggest wins** show how much of the record rests on a few large wins.
+- The book counts how many tracked top traders hold the same side and the other side of each open position. Wallets holding both sides are left out.
 
 ### Fill simulator
 
@@ -152,8 +165,9 @@ The simulator spends your stake against the asks in the public order book, best 
 
 ## Data sources
 
-- `data-api.polymarket.com/v2`: leaderboard, positions, tokens (resolution), prices-history (charts), trades (Large Trades), value, activity.
+- `data-api.polymarket.com/v2`: leaderboard, positions (open, closed and redeemable, for the Account tab), tokens (resolution), prices-history (charts), trades (Large Trades), value.
 - `gamma-api.polymarket.com/markets`: the live market universe, prices, order book top, end dates, tags (categories).
+- `gamma-api.polymarket.com/public-search`: turns a username typed on the Account tab into its wallet. Only an exact name match is accepted.
 - `clob.polymarket.com/book`: the full public order book for one outcome, fetched only when a market is open.
 
 All three are public and need no key. Categories come from Gamma's tags when they are present, otherwise from matching the market title.
@@ -166,11 +180,17 @@ Everything is optional and set through environment variables.
 
 | Variable | Default | What it does |
 |---|---|---|
-| `POLY_ME` | none | A wallet address or username to read for My Book |
 | `POLY_PORT` | 8890 | Port the page is served on (bound to 127.0.0.1 only) |
 | `POLY_POLL_MS` | 60000 | How often Polymarket is polled |
 | `POLY_DATA_DIR` | `./data` | Where history is kept |
-| `POLY_DATA_API`, `POLY_GAMMA_API`, `POLY_CLOB_API`, `POLY_SITE` | Polymarket | Point the server at a local stand-in for testing |
+| `POLY_DATA_API`, `POLY_GAMMA_API`, `POLY_CLOB_API` | Polymarket | Point the server at a local stand-in for testing |
+
+## Security
+
+- The server listens on 127.0.0.1 only and answers only requests addressed to `127.0.0.1`, `localhost` or `[::1]` on its port. A web page that points its own domain at your machine (DNS rebinding) gets a 421 and cannot read the API.
+- The only routes that change anything (`/api/refresh`) refuse requests sent from another site.
+- It holds no keys, logins or wallets, and cannot place, change or cancel an order. Everything it reads is public.
+- Text from Polymarket (market titles, usernames) is escaped before it reaches the page.
 
 ## Design notes
 
