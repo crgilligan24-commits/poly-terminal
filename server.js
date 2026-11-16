@@ -218,7 +218,10 @@ async function apiGet(baseUrl, params = {}) {
         let status = 'ERR';
         const t0 = Date.now();
         try {
-            const r = await fetch(u.toString(), { signal: AbortSignal.timeout(30_000) });
+            // Name the client. Since Nov 2026 the Data API answers 429 to every
+            // /v2/positions request sent with Node's default "node" User-Agent.
+            const r = await fetch(u.toString(), { signal: AbortSignal.timeout(30_000),
+                                                  headers: { 'User-Agent': 'poly-terminal/1.0', 'Accept': 'application/json' } });
             status = r.status;
             if (r.status === 429 && attempt < 2) { await sleep(2 ** (attempt + 1) * 1000); continue; }
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -2134,6 +2137,17 @@ const server = http.createServer((req, res) => {
         lookupAccount(q.get('u') || '')
             .then(body => sendJson(req, res, body))
             .catch(e => sendJson(req, res, { ok: false, error: String(e.message || e) }, 500));
+        return;
+    }
+    // Bundled typefaces (Inter, JetBrains Mono; SIL OFL). Fixed whitelist: no path from the URL touches the disk.
+    const FONTS = { '/fonts/inter.woff2': 'inter.woff2', '/fonts/jetbrains-mono.woff2': 'jetbrains-mono.woff2' };
+    if (FONTS[route]) {
+        try {
+            const buf = fs.readFileSync(path.join(__dirname, 'fonts', FONTS[route]));
+            res.writeHead(200, { 'Content-Type': 'font/woff2', 'Cache-Control': 'public, max-age=604800, immutable',
+                                 'X-Content-Type-Options': 'nosniff' });
+            res.end(buf);
+        } catch { res.writeHead(404); res.end('Not Found'); }
         return;
     }
     if (route === '/' || route === '/index.html') {

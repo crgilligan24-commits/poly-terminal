@@ -141,7 +141,7 @@ The top 24 plays by score are logged once per market side, with the entry and sc
 - **Cumulative return** stakes one unit on every resolved play in the order they resolved. It ignores fees and assumes every fill at the logged entry.
 - **Without the 3 biggest wins** and the **median play** are there because returns on binary markets are lopsided. A side bought at 5c that wins returns +1,900%, so two or three longshots can turn the average positive while most plays lose. When the average and the typical play disagree, the page says so.
 
-**Results so far** (November 14, 2026, one day of logging): 153 resolved plays, a 50% hit rate against a 56% break-even, so an edge of -6 points. The average play returned +8%, but without its three biggest wins (+1,487%, +1,289% and +400%) it returned -13%. The sample is too small to separate skill from luck in either direction, and on this evidence the score does not beat the market price.
+**Results so far** (November 16, 2026, three days of logging): 582 resolved plays, a 56% hit rate against a 58% break-even, so an edge of -3 points. The average play returned -0.2%, and without its three biggest wins (+1,487%, +1,289% and +809%) it returned -6%. Just over half the plays won, so the median play is a small win (+5%), but every loss costs the whole stake. A gap of 3 points is still within what luck alone could produce at this sample size, and on this evidence the score does not beat the market price.
 
 ### Account track record
 
@@ -194,10 +194,10 @@ Everything is optional and set through environment variables.
 
 ## Design notes
 
-The interface follows a few fixed rules: one dark palette, amber reserved for the single number you act on in each section, red and green used only for direction, and no motion unless you caused it. Interface ideas were borrowed from open terminals I studied while building this, in particular the command palette and market heatmap in [OpenTerminal](https://github.com/ErTasselli/OpenTerminal), the copyable daily brief in [Polymarket Desk](https://github.com/juliosuas/polymarket-desk), and the habit of labelling where every number came from in [OpenTerminalUI](https://github.com/Hitheshkaranth/OpenTerminalUI). No code was taken from any of them.
+The interface follows a few fixed rules: one dark palette, amber reserved for the single number you act on in each section, red and green used only for direction, and no motion unless you caused it. Every section sits in its own panel with a header strip, text importance is shown by brightness rather than extra colors, and numbers are set in a fixed-width face so columns line up. Words use Inter and numbers use JetBrains Mono, both bundled in `fonts/` so nothing loads from the internet. Interface ideas were borrowed from open terminals I studied while building this, in particular the command palette and market heatmap in [OpenTerminal](https://github.com/ErTasselli/OpenTerminal), the copyable daily brief in [Polymarket Desk](https://github.com/juliosuas/polymarket-desk), and the habit of labelling where every number came from in [OpenTerminalUI](https://github.com/Hitheshkaranth/OpenTerminalUI). No code was taken from any of them.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). The bundled typefaces, Inter and JetBrains Mono, are under the SIL Open Font License; their license files are in `fonts/`.
 
 This project is not affiliated with Polymarket. It reads public data only.
